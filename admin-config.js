@@ -6,5 +6,5 @@
      예) https://plusr2026.github.io/63office-soori/?admin#gallery
    ========================================================= */
 window.ADMIN_EMAILS = [
-  "관리자이메일@gmail.com",
+  "sago7878@gmail.com",
 ];
