@@ -125,6 +125,14 @@ const GalleryStore = {
     this.hasMore = snap.docs.length === size;
     return snap.docs.map(d => ({ id: d.id, ...d.data() }));
   },
+  /* 이 브라우저(익명 ID)로 올린 수리만 — 내 게시물 수만큼만 읽음 */
+  async loadMine() {
+    if (this.mode === "local") return this._local.filter(p => p.authorId === this.uid);
+    const { collection, query, where, limit, getDocs } = this.fb;
+    const snap = await getDocs(query(collection(this.db, "gallery"), where("authorId", "==", this.uid), limit(60)));
+    const ms = v => (v && typeof v.toMillis === "function") ? v.toMillis() : (Date.parse(v) || 0);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => ms(b.createdAt) - ms(a.createdAt));
+  },
   async add(post) {
     if (this.mode === "local") { const p = { id: "local-" + Date.now(), ...post, createdAt: new Date() }; this._local.unshift(p); return p; }
     const { collection, addDoc, serverTimestamp } = this.fb;
@@ -324,12 +332,15 @@ function tapIntro(which) {
 }
 
 /* ---------- 갤러리 ---------- */
-let justPosted = null, galleryLoaded = false;
+let justPosted = null, galleryLoaded = false, galleryMode = "all", minePosts = null;
 const cleanName = s => (typeof s === "string" && s.trim()) ? s.trim().slice(0, 15) : (T.card_empty_suri || "이름 없는 수리");
 const cleanNick = s => (typeof s === "string" && s.trim()) ? s.trim().slice(0, 10) : (T.card_empty_nick || "익명");
 function renderGallery() {
   const grid = $("#grid"); grid.replaceChildren();
-  for (const p of posts) {
+  const mine = galleryMode === "mine", list = mine ? (minePosts || []) : posts;
+  $("#gAll").setAttribute("aria-selected", String(!mine)); $("#gMine").setAttribute("aria-selected", String(mine));
+  $("#gMineNote").hidden = !mine;
+  for (const p of list) {
     const b = document.createElement("button");
     b.className = "tile" + (p.id === justPosted ? " new" : "");
     const name = cleanName(p.caption);
@@ -338,10 +349,18 @@ function renderGallery() {
     b.addEventListener("click", () => openCard({ recipe: sanitize(p.recipe), name, nick: cleanNick(p.nickname), post: p }));
     grid.appendChild(b);
   }
-  const total = Math.max(12, Math.ceil(posts.length / 3) * 3);
-  for (let i = posts.length; i < total; i++) { const e = document.createElement("div"); e.className = "tile empty"; e.setAttribute("aria-hidden", "true"); grid.appendChild(e); }
-  $("#gState").textContent = posts.length ? "" : (galleryLoaded ? T.gallery_empty : T.gallery_loading);
-  $("#more").hidden = !GalleryStore.hasMore;
+  const total = Math.max(mine ? 3 : 12, Math.ceil(list.length / 3) * 3);
+  for (let i = list.length; i < total; i++) { const e = document.createElement("div"); e.className = "tile empty"; e.setAttribute("aria-hidden", "true"); grid.appendChild(e); }
+  const loaded = mine ? minePosts !== null : galleryLoaded;
+  $("#gState").textContent = list.length ? "" : (loaded ? (mine ? T.gallery_mine_empty : T.gallery_empty) : T.gallery_loading);
+  $("#more").hidden = mine || !GalleryStore.hasMore;
+}
+async function setGalleryMode(m) {
+  galleryMode = m; renderGallery();
+  if (m === "mine" && minePosts === null) {
+    try { minePosts = await GalleryStore.loadMine(); } catch (e) { console.error(e); minePosts = []; $("#gState").textContent = T.gallery_error; return; }
+    renderGallery();
+  }
 }
 async function loadGallery(reset) {
   try {
@@ -383,7 +402,8 @@ async function post() {
   try {
     const p = await GalleryStore.add({ recipe: serialize(recipe), caption: $("#caption").value.trim().slice(0, 15), nickname, authorId: GalleryStore.uid, v: 2 });
     try { localStorage.setItem(NICK_KEY, nickname); } catch {}
-    posts = [p, ...posts.filter(x => x.id !== p.id)]; justPosted = p.id; galleryLoaded = galleryLoaded || GalleryStore.mode === "local";
+    posts = [p, ...posts.filter(x => x.id !== p.id)]; justPosted = p.id; galleryMode = "all";
+    if (minePosts !== null) minePosts = [p, ...minePosts.filter(x => x.id !== p.id)]; galleryLoaded = galleryLoaded || GalleryStore.mode === "local";
     $("#caption").value = ""; updateCounts(); $("#done").close(); go("gallery"); toast(T.toast_posted);
     if (GalleryStore.mode === "shared" && !galleryLoaded) loadGallery(true);
     setTimeout(() => { justPosted = null; }, 1500);
@@ -439,7 +459,7 @@ function confirmBox(msg) {
 async function deleteCardPost() {
   if (!cardPost || !(await confirmBox(T.confirm_delete))) return;
   const b = $("#cardDel"); b.disabled = true;
-  try { await GalleryStore.remove(cardPost.id); posts = posts.filter(p => p.id !== cardPost.id); $("#cardDlg").close(); renderGallery(); toast(T.toast_deleted); }
+  try { await GalleryStore.remove(cardPost.id); posts = posts.filter(p => p.id !== cardPost.id); if (minePosts) minePosts = minePosts.filter(p => p.id !== cardPost.id); $("#cardDlg").close(); renderGallery(); toast(T.toast_deleted); }
   catch (e) { console.error(e); toast(T.toast_post_fail); }
   finally { b.disabled = false; }
 }
@@ -457,6 +477,8 @@ async function start() {
   $("#toGallery").addEventListener("click", () => go("gallery"));
   $("#backToMain").addEventListener("click", () => go("main"));
   $("#more").addEventListener("click", () => loadGallery(false));
+  $("#gAll").addEventListener("click", () => setGalleryMode("all"));
+  $("#gMine").addEventListener("click", () => setGalleryMode("mine"));
   $("#caption").addEventListener("input", updateCounts); $("#nick").addEventListener("input", updateCounts);
   $("#post").addEventListener("click", post);
   $("#save").addEventListener("click", () => openCard({ recipe, name: cleanName($("#caption").value), nick: cleanNick($("#nick").value) }));

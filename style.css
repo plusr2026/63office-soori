@@ -130,7 +130,7 @@ dialog[open] .pop{animation:rise .25s ease-out}
 .back{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));left:12px;width:36px;height:36px;border:0;border-radius:50%;background:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;padding:0;z-index:2}
 .back svg{width:18px;height:18px;stroke:#000;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .g-sub{margin:17px 0 0;font-size:15px;line-height:1.45;word-break:keep-all}
-.grid{position:relative;display:grid;grid-template-columns:repeat(3,1fr);column-gap:12px;row-gap:14px;padding:55px 21px 0}
+.grid{position:relative;display:grid;grid-template-columns:repeat(3,1fr);column-gap:12px;row-gap:14px;padding:20px 21px 0}
 .tile{position:relative;aspect-ratio:1/1;border:0;border-radius:5px;background:rgba(255,255,255,.7);padding:0;overflow:hidden}
 .tile.empty{cursor:default}
 .tile .suri{background:transparent}
@@ -147,3 +147,7 @@ dialog[open] .pop{animation:rise .25s ease-out}
 .svg-slot{display:block}
 [data-lines] span{display:block}
 .more[hidden]{display:none}
+.g-tabs{position:relative;display:flex;justify-content:center;gap:8px;margin-top:28px}
+.g-tab{height:36px;padding:0 18px;border:0;border-radius:999px;background:rgba(255,255,255,.7);font-size:14px;font-weight:600;color:#000}
+.g-tab[aria-selected="true"]{background:#000;color:#fff}
+.g-note{position:relative;margin:10px 0 0;text-align:center;font-size:12px;color:rgba(0,0,0,.5)}
