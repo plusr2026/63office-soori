@@ -8,12 +8,12 @@
    갤러리에 올린 수리는 새로고침하면 사라집니다.
    ========================================================= */
 window.FIREBASE_CONFIG = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: "",
+  apiKey: "AIzaSyAEhuijgkodngMBRv80UlelFuW9ZFMTmhg",
+  authDomain: "office-soori.firebaseapp.com",
+  projectId: "office-soori",
+  storageBucket: "office-soori.firebasestorage.app",
+  messagingSenderId: "146654629497",
+  appId: "1:146654629497:web:2dba2199375ae93d95cea8",
 };
 
 /* 갤러리에서 한 번에 불러올 수리 개수 (무료 한도 절약용. 30 권장) */
