@@ -1,0 +1,119 @@
+{
+  "canvas": 513,
+  "base": "parts/base/default-base.png",
+  "faceLayer": 2,
+  "categories": [
+    {
+      "key": "eyes",
+      "label": "눈",
+      "fixed": true,
+      "files": [
+        "eyes-01.png",
+        "eyes-02.png",
+        "eyes-03.png",
+        "eyes-04.png",
+        "eyes-05.png",
+        "eyes-06.png",
+        "eyes-07.png",
+        "eyes-08.png"
+      ]
+    },
+    {
+      "key": "mouth",
+      "label": "입",
+      "fixed": true,
+      "files": [
+        "mouth-01.png",
+        "mouth-02.png",
+        "mouth-03.png",
+        "mouth-04.png",
+        "mouth-05.png",
+        "mouth-06.png",
+        "mouth-07.png"
+      ]
+    },
+    {
+      "key": "brow",
+      "label": "눈썹",
+      "layer": 3,
+      "files": [
+        "brow-01.png",
+        "brow-02.png",
+        "brow-03.png",
+        "brow-04.png",
+        "brow-05.png",
+        "brow-06.png"
+      ]
+    },
+    {
+      "key": "hair",
+      "label": "헤어",
+      "layer": 5,
+      "files": [
+        "hair-01.png",
+        "hair-02.png",
+        "hair-03.png",
+        "hair-04.png",
+        "hair-05.png",
+        "hair-06.png",
+        "hair-07.png",
+        "hair-08.png",
+        "hair-09.png",
+        "hair-10.png",
+        "hair-11.png",
+        "hair-12.png"
+      ]
+    },
+    {
+      "key": "clothes",
+      "label": "의상",
+      "layer": 1,
+      "files": [
+        "clothes-01.png",
+        "clothes-02.png",
+        "clothes-03.png",
+        "clothes-04.png",
+        "clothes-05.png",
+        "clothes-06.png",
+        "clothes-07.png",
+        "clothes-08.png",
+        "clothes-09.png",
+        "clothes-10.png",
+        "clothes-11.png",
+        "clothes-12.png",
+        "clothes-13.png",
+        "clothes-14.png",
+        "clothes-15.png"
+      ]
+    },
+    {
+      "key": "acc",
+      "label": "액세서리",
+      "layer": 4,
+      "files": [
+        "effect-01.png",
+        "effect-02.png",
+        "effect-03.png",
+        "effect-04.png",
+        "effect-05.png",
+        "effect-06.png",
+        "effect-07.png",
+        "glasses-01.png",
+        "glasses-02.png",
+        "glasses-03.png",
+        "glasses-04.png",
+        "glasses-05.png",
+        "glasses-06.png",
+        "prop-01.png",
+        "prop-02.png",
+        "prop-03.png",
+        "prop-04.png",
+        "prop-05.png",
+        "prop-06.png",
+        "prop-07.png",
+        "prop-08.png",
+        "prop-09.png"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+rules_version = '2';
+// 63 OFFICE LIFE 갤러리 보안 규칙
+// Firebase 콘솔 > Firestore Database > 규칙 탭에 이 내용을 통째로 붙여넣고 "게시"를 누르세요.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /gallery/{postId} {
+      // 누구나 갤러리를 볼 수 있음
+      allow read: if true;
+
+      // 올리기: 로그인(익명)한 사람만, 정해진 형식으로만, 작성자 = 본인
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['recipe', 'caption', 'nickname', 'authorId', 'createdAt', 'v'])
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.caption is string && request.resource.data.caption.size() <= 15
+        && request.resource.data.nickname is string && request.resource.data.nickname.size() <= 10
+        && request.resource.data.recipe is map
+        && request.resource.data.recipe.items is list
+        && request.resource.data.recipe.items.size() <= 40
+        && request.resource.data.createdAt == request.time;
+
+      // 삭제: 본인 게시물만 (관리자는 Firebase 콘솔에서 직접 삭제)
+      allow delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+
+      // 수정: 불가
+      allow update: if false;
+    }
+  }
+}
