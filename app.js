@@ -97,7 +97,7 @@ const serialize = r => ({ eyes: r.eyes, mouth: r.mouth,
    갤러리 저장소 (Firebase Firestore). 설정이 비어 있으면 미리보기 모드
    ========================================================= */
 const GalleryStore = {
-  mode: "local", fb: null, db: null, uid: null, cursor: null, hasMore: false, _local: [],
+  mode: "local", fb: null, db: null, uid: null, email: null, isAdmin: false, authMod: null, auth: null, cursor: null, hasMore: false, _local: [],
   async init() {
     const cfg = window.FIREBASE_CONFIG || {};
     if (!cfg.apiKey || !cfg.projectId) { this.uid = "local-me"; return "local"; }
@@ -106,11 +106,29 @@ const GalleryStore = {
       const [app, auth, fs] = await Promise.all([import(base + "firebase-app.js"), import(base + "firebase-auth.js"), import(base + "firebase-firestore.js")]);
       const a = app.initializeApp(cfg);
       this.fb = fs; this.db = fs.getFirestore(a);
-      const au = auth.getAuth(a);
-      const cred = await auth.signInAnonymously(au);   // 브라우저별 익명 ID (내 게시물 삭제용)
-      this.uid = cred.user.uid; this.mode = "shared";
+      const au = auth.getAuth(a); this.authMod = auth; this.auth = au;
+      await (au.authStateReady ? au.authStateReady() : Promise.resolve());
+      if (!au.currentUser) await auth.signInAnonymously(au);   // 브라우저별 익명 ID (내 게시물 삭제용)
+      this.setUser(au.currentUser); this.mode = "shared";
     } catch (e) { console.error("Firebase 연결 실패", e); this.uid = "local-me"; this.mode = "local"; }
     return this.mode;
+  },
+  setUser(u) {
+    this.uid = u ? u.uid : null;
+    this.email = u && !u.isAnonymous ? (u.email || "") : null;
+    const admins = (window.ADMIN_EMAILS || []).map(e => String(e).trim().toLowerCase());
+    this.isAdmin = !!(this.email && u.emailVerified && admins.includes(this.email.toLowerCase()));
+  },
+  /* 관리자 전용: 구글 계정 로그인 / 로그아웃 */
+  async adminLogin() {
+    const { GoogleAuthProvider, signInWithPopup } = this.authMod;
+    const cred = await signInWithPopup(this.auth, new GoogleAuthProvider());
+    this.setUser(cred.user);
+  },
+  async adminLogout() {
+    await this.authMod.signOut(this.auth);
+    const cred = await this.authMod.signInAnonymously(this.auth);
+    this.setUser(cred.user);
   },
   async loadPage(reset) {
     const size = window.GALLERY_PAGE_SIZE || 30;
@@ -436,7 +454,7 @@ async function openCard({ recipe: r, name, nick, post: p }) {
   try {
     cardCanvas = await makeCard(r, name, nick); cardName = name; cardPost = p || null;
     $("#cardImg").src = cardCanvas.toDataURL("image/png"); $("#cardImg").alt = name + " 사원증 이미지";
-    $("#cardDel").hidden = !(p && p.authorId === GalleryStore.uid);
+    $("#cardDel").hidden = !(p && (p.authorId === GalleryStore.uid || GalleryStore.isAdmin));
     $("#cardDlg").showModal();
   } catch (e) { console.error(e); }
 }
@@ -464,6 +482,22 @@ async function deleteCardPost() {
   finally { b.disabled = false; }
 }
 
+/* ---------- 관리자 모드 (주소에 ?admin 을 붙였을 때만) ---------- */
+const ADMIN_MODE = new URLSearchParams(location.search).has("admin");
+function renderAdmin() {
+  const bar = $("#adminBar"); if (!ADMIN_MODE) { bar.hidden = true; return; }
+  bar.hidden = false;
+  const s = GalleryStore;
+  if (s.mode !== "shared") { $("#adminInfo").textContent = "관리자 모드는 Firebase 연결 후 사용할 수 있어요."; $("#adminLogin").hidden = $("#adminLogout").hidden = true; return; }
+  $("#adminLogin").hidden = !!s.email; $("#adminLogout").hidden = !s.email;
+  $("#adminInfo").textContent = !s.email ? "관리자 모드" : (s.isAdmin ? "관리자: " + s.email + " · 모든 카드를 삭제할 수 있어요" : s.email + " 은(는) 관리자로 등록되지 않았어요");
+}
+async function adminAction(fn) {
+  try { await fn(); minePosts = null; if (galleryMode === "mine") setGalleryMode("mine"); }
+  catch (e) { console.error(e); if (e && e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request") toast("로그인하지 못했어요. 팝업 차단을 확인해 주세요."); }
+  renderAdmin();
+}
+
 /* ---------- 시작 ---------- */
 async function start() {
   applyContent();
@@ -477,6 +511,8 @@ async function start() {
   $("#toGallery").addEventListener("click", () => go("gallery"));
   $("#backToMain").addEventListener("click", () => go("main"));
   $("#more").addEventListener("click", () => loadGallery(false));
+  $("#adminLogin").addEventListener("click", () => adminAction(() => GalleryStore.adminLogin()));
+  $("#adminLogout").addEventListener("click", () => adminAction(() => GalleryStore.adminLogout()));
   $("#gAll").addEventListener("click", () => setGalleryMode("all"));
   $("#gMine").addEventListener("click", () => setGalleryMode("mine"));
   $("#caption").addEventListener("input", updateCounts); $("#nick").addEventListener("input", updateCounts);
@@ -502,6 +538,7 @@ async function start() {
   go(viewFromHash(), false);
   const mode = await GalleryStore.init();
   if (mode === "local") { const n = $("#modeNote"); n.hidden = false; n.textContent = T.local_mode_note; }
+  renderAdmin();
   if (!$("#gallery").hidden) loadGallery(true);
 }
 start().catch(e => { console.error(e); const l = $("#loading"); if (l) l.textContent = "사이트를 불러오지 못했어요. 새로고침해 주세요."; });

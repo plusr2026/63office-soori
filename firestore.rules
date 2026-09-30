@@ -18,8 +18,12 @@ service cloud.firestore {
         && request.resource.data.recipe.items.size() <= 40
         && request.resource.data.createdAt == request.time;
 
-      // 삭제: 본인 게시물만 (관리자는 Firebase 콘솔에서 직접 삭제)
-      allow delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+      // 삭제: 본인 게시물, 또는 관리자(아래 이메일 목록 — admin-config.js 와 똑같이 맞추기)
+      allow delete: if request.auth != null && (
+        resource.data.authorId == request.auth.uid
+        || (request.auth.token.email_verified == true
+            && request.auth.token.email in ['관리자이메일@gmail.com'])
+      );
 
       // 수정: 불가
       allow update: if false;

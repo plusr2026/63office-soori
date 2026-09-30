@@ -12,6 +12,7 @@
 <!-- 문구 → content.js / 갤러리 연결 → firebase-config.js / 파츠 목록 → parts.json -->
 <script src="content.js"></script>
 <script src="firebase-config.js"></script>
+<script src="admin-config.js"></script>
 <script type="module" src="app.js"></script>
 </head>
 <body>
@@ -75,6 +76,11 @@
   <div class="g-head">
     <h1 class="title-logo svg-fit" id="gTitle" tabindex="-1" style="margin:0 auto;outline:none"><span class="sr">63 OFFICE LIFE with SOORI 갤러리</span><span class="svg-slot" data-svg="design/title.svg"></span></h1>
     <p class="g-sub" data-lines="gallery_sub"></p>
+  </div>
+  <div class="admin-bar" id="adminBar" hidden>
+    <span id="adminInfo"></span>
+    <button id="adminLogin">관리자 로그인</button>
+    <button id="adminLogout" hidden>로그아웃</button>
   </div>
   <div class="g-tabs" role="tablist" aria-label="갤러리 보기 방식">
     <button class="g-tab" id="gAll" role="tab" aria-selected="true" data-text="gallery_tab_all"></button>

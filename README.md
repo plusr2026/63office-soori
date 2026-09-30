@@ -13,6 +13,7 @@
 | `parts/` | 파츠 이미지 (탭별 폴더) | 자주 |
 | `design/` | 로고, 버튼 속 글자, 63빌딩 아이콘, 인트로 수리 그림 (SVG) | 가끔 |
 | `firebase-config.js` | 공유 갤러리 연결 정보 | 처음 한 번 |
+| `admin-config.js` | 관리자 이메일 목록 | 관리자 바뀔 때 |
 | `firestore.rules` | 갤러리 보안 규칙 (Firebase 콘솔에 붙여넣는 용도) | 처음 한 번 |
 | `fonts/` | LIFEPLUS 폰트 (사원증 카드의 수리 닉네임용) | 거의 없음 |
 | `index.html`, `style.css`, `app.js` | 화면 구조·디자인·동작 | 수정 불필요 |
@@ -125,7 +126,11 @@ Figma에서 해당 요소를 선택 → Export → **SVG**로 내보낸 뒤, 아
 7. 사이트에서 수리를 올려보고, Firestore 화면에 `gallery` 항목이 생기면 완료
 
 ### 운영 참고
-- **관리자 삭제**: Firestore Database → `gallery` → 해당 문서 → 문서 삭제
+- **관리자 삭제 (사이트에서)**: 주소 뒤에 `?admin`을 붙여 접속 → 갤러리의 "관리자 로그인" → 관리자 구글 계정으로 로그인 → 모든 카드에 삭제 버튼 표시
+  - 예) `https://plusr2026.github.io/63office-soori/?admin#gallery`
+  - 처음 한 번 설정: ① Authentication → 로그인 방법 → **Google** 사용 설정 ② `admin-config.js`와 `firestore.rules` 두 곳에 관리자 이메일 입력 ③ 바뀐 규칙을 Firebase 콘솔 규칙 탭에 다시 붙여넣고 게시
+  - 관리자 로그인은 일반 방문자에게는 보이지 않습니다.
+- **관리자 삭제 (콘솔에서)**: Firestore Database → `gallery` → 해당 문서 → 문서 삭제
   (문서의 `caption`이 수리 닉네임, `nickname`이 작성자 닉네임)
 - **내 게시물 삭제**와 갤러리의 **"내 수리" 보기**는 올린 **같은 기기·같은 브라우저**에서만 됩니다. (로그인 없이 브라우저별 익명 ID로 구분)
 - "내 수리"를 누르면 그 사람이 올린 게시물 수만큼만 읽기가 발생합니다.
