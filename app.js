@@ -151,6 +151,22 @@ const GalleryStore = {
     const ms = v => (v && typeof v.toMillis === "function") ? v.toMillis() : (Date.parse(v) || 0);
     return snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => ms(b.createdAt) - ms(a.createdAt));
   },
+  /* 관리자 전용: 전체 게시물 (오래된 순, 500개씩 나눠 읽기 — 게시물 수만큼 읽기 발생) */
+  async loadAll() {
+    if (this.mode === "local") return this._local.slice().reverse();
+    const { collection, query, orderBy, limit, startAfter, getDocs } = this.fb;
+    let out = [], last = null;
+    while (true) {
+      const parts = [collection(this.db, "gallery"), orderBy("createdAt", "asc")];
+      if (last) parts.push(startAfter(last));
+      parts.push(limit(500));
+      const snap = await getDocs(query(...parts));
+      out = out.concat(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      if (snap.docs.length < 500) break;
+      last = snap.docs[snap.docs.length - 1];
+    }
+    return out;
+  },
   async add(post) {
     if (this.mode === "local") { const p = { id: "local-" + Date.now(), ...post, createdAt: new Date() }; this._local.unshift(p); return p; }
     const { collection, addDoc, serverTimestamp } = this.fb;
@@ -449,17 +465,22 @@ async function makeCard(r, name, nick) {
   g.drawImage(await loadImg(svgUrl(await getSvg("design/plus-logo.svg"))), 123, 466, 104, 22);
   return cv;
 }
-let cardCanvas = null, cardName = "", cardPost = null;
+let cardCanvas = null, cardName = "", cardPost = null, cardCanSave = false;
 async function openCard({ recipe: r, name, nick, post: p }) {
   try {
     cardCanvas = await makeCard(r, name, nick); cardName = name; cardPost = p || null;
     $("#cardImg").src = cardCanvas.toDataURL("image/png"); $("#cardImg").alt = name + " 사원증 이미지";
     $("#cardDel").hidden = !(p && (p.authorId === GalleryStore.uid || GalleryStore.isAdmin));
+    /* 저장은 내 수리(또는 방금 만든 수리)만 가능 — 남의 카드는 보기만 */
+    const own = !p || p.authorId === GalleryStore.uid;
+    cardCanSave = own || GalleryStore.isAdmin;
+    $("#cardSave").hidden = !cardCanSave; $("#cardHint").hidden = !cardCanSave;
+    $("#cardImg").classList.toggle("locked", !cardCanSave);
     $("#cardDlg").showModal();
   } catch (e) { console.error(e); }
 }
 async function saveCard() {
-  if (!cardCanvas) return;
+  if (!cardCanvas || !cardCanSave) return;
   const blob = await new Promise(res => cardCanvas.toBlob(res, "image/png"));
   const filename = "63officelife-" + cardName.replace(/[\\/:*?"<>|\s]+/g, "_") + ".png";
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename;
@@ -489,8 +510,32 @@ function renderAdmin() {
   bar.hidden = false;
   const s = GalleryStore;
   if (s.mode !== "shared") { $("#adminInfo").textContent = "관리자 모드는 Firebase 연결 후 사용할 수 있어요."; $("#adminLogin").hidden = $("#adminLogout").hidden = true; return; }
-  $("#adminLogin").hidden = !!s.email; $("#adminLogout").hidden = !s.email;
+  $("#adminLogin").hidden = !!s.email; $("#adminLogout").hidden = !s.email; $("#adminExport").hidden = !s.isAdmin;
   $("#adminInfo").textContent = !s.email ? "관리자 모드" : (s.isAdmin ? "관리자: " + s.email + " · 모든 카드를 삭제할 수 있어요" : s.email + " 은(는) 관리자로 등록되지 않았어요");
+}
+/* 참여 목록을 엑셀용 CSV로 내려받기 */
+async function exportList() {
+  const btn = $("#adminExport"); btn.disabled = true; const label = btn.textContent; btn.textContent = "불러오는 중…";
+  try {
+    const list = await GalleryStore.loadAll();
+    const toDate = v => (v && typeof v.toDate === "function") ? v.toDate() : (v ? new Date(v) : null);
+    const fmt = d => d ? new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(d) : "";
+    const count = {}, nth = {};
+    list.forEach(p => { count[p.authorId] = (count[p.authorId] || 0) + 1; });
+    const cell = v => { let s = v == null ? "" : String(v); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
+    const rows = [["번호", "올린 시각(한국)", "수리 닉네임", "내 닉네임", "작성자 구분(같은 브라우저)", "작성자의 몇 번째 게시물", "작성자 게시물 수", "게시물 ID"]];
+    list.forEach((p, i) => {
+      nth[p.authorId] = (nth[p.authorId] || 0) + 1;
+      rows.push([i + 1, fmt(toDate(p.createdAt)), p.caption || "", p.nickname || "", String(p.authorId || "").slice(0, 8), nth[p.authorId], count[p.authorId], p.id]);
+    });
+    const csv = "\uFEFF" + rows.map(r => r.map(cell).join(",")).join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const d = new Date(), stamp = d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `63officelife-참여목록-${stamp}.csv`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast(list.length + "건을 내려받았어요");
+  } catch (e) { console.error(e); toast("목록을 불러오지 못했어요."); }
+  finally { btn.disabled = false; btn.textContent = label; }
 }
 async function adminAction(fn) {
   try { await fn(); minePosts = null; if (galleryMode === "mine") setGalleryMode("mine"); }
@@ -513,6 +558,7 @@ async function start() {
   $("#more").addEventListener("click", () => loadGallery(false));
   $("#adminLogin").addEventListener("click", () => adminAction(() => GalleryStore.adminLogin()));
   $("#adminLogout").addEventListener("click", () => adminAction(() => GalleryStore.adminLogout()));
+  $("#adminExport").addEventListener("click", () => { if (GalleryStore.isAdmin) exportList(); });
   $("#gAll").addEventListener("click", () => setGalleryMode("all"));
   $("#gMine").addEventListener("click", () => setGalleryMode("mine"));
   $("#caption").addEventListener("input", updateCounts); $("#nick").addEventListener("input", updateCounts);
@@ -522,6 +568,8 @@ async function start() {
   $("#done").addEventListener("click", e => { if (e.target === e.currentTarget) e.currentTarget.close(); });
   $("#cardClose").addEventListener("click", () => $("#cardDlg").close());
   $("#cardSave").addEventListener("click", saveCard);
+  $("#cardImg").addEventListener("contextmenu", e => { if (!cardCanSave) e.preventDefault(); });
+  $("#cardImg").addEventListener("dragstart", e => { if (!cardCanSave) e.preventDefault(); });
   $("#cardDel").addEventListener("click", deleteCardPost);
   $("#cardDlg").addEventListener("click", e => { if (e.target === e.currentTarget) e.currentTarget.close(); });
   $("#intro1").addEventListener("click", e => { if (!e.target.closest("[data-skip]")) tapIntro("intro1"); });

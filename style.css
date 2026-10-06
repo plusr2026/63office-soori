@@ -154,3 +154,5 @@ dialog[open] .pop{animation:rise .25s ease-out}
 .admin-bar{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:18px 21px 0;padding:10px 12px;border-radius:8px;background:#000;color:#fff;font-size:13px}
 .admin-bar[hidden]{display:none}
 .admin-bar button{height:30px;padding:0 12px;border:0;border-radius:999px;background:#FFCC00;color:#000;font-size:13px;font-weight:700}
+.card-pop img.locked{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none}
+.card-actions button[hidden]{display:none}
