@@ -9,6 +9,22 @@ const $ = s => document.querySelector(s);
 const reduceMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const FB_VERSION = "10.12.2";
 
+/* ---------- 방문 통계 (GA4) — 측정 ID는 analytics-config.js ---------- */
+const GA_ID = String(window.GA_MEASUREMENT_ID || "").trim();
+const NO_TRACK = new URLSearchParams(location.search).has("admin");   // 관리자 방문 제외
+function initAnalytics() {
+  if (!GA_ID || NO_TRACK) return;
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function () { window.dataLayer.push(arguments); };
+  window.gtag("js", new Date());
+  window.gtag("config", GA_ID, { send_page_view: false });
+  const s = document.createElement("script"); s.async = true;
+  s.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(GA_ID);
+  document.head.appendChild(s);
+}
+function track(name, params) { try { if (GA_ID && !NO_TRACK && window.gtag) window.gtag("event", name, params || {}); } catch {} }
+const VIEW_TITLES = { intro1: "인트로1", intro2: "인트로2", main: "꾸미기", gallery: "갤러리" };
+
 /* ---------- 문구 채우기 ---------- */
 function applyContent() {
   document.querySelectorAll("[data-text]").forEach(el => { const v = T[el.dataset.text]; if (typeof v === "string") el.textContent = v; });
@@ -35,7 +51,8 @@ async function inlineSvgs() {
 
 /* ---------- 파츠 불러오기 (그림 영역·클릭 판정은 자동 계산) ---------- */
 let C = 513, FACE_RANK = 2, PARTS = [], DRAG = {}, ASSETS = {};
-const loadImg = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error(src)); i.src = src; });
+const imgCache = {};
+const loadImg = src => imgCache[src] || (imgCache[src] = new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => { delete imgCache[src]; rej(new Error(src)); }; i.src = src; }));
 async function loadParts() {
   const m = await (await fetch("parts.json", { cache: "no-cache" })).json();
   C = m.canvas || 513; FACE_RANK = m.faceLayer || 2;
@@ -261,7 +278,10 @@ function renderOptions() {
     b.setAttribute("aria-label", part.label + " " + (i + 1) + (n > 1 ? ", " + n + "개 추가됨" : ""));
     b.setAttribute("aria-pressed", String(n > 0)); b.appendChild(partThumb(a));
     if (n > 1) { const cnt = document.createElement("span"); cnt.className = "cnt"; cnt.textContent = n; b.appendChild(cnt); }
-    b.addEventListener("click", () => cfg ? addItem(part.key, id) : (recipe[part.key] !== id && change(() => { recipe[part.key] = id; }, true)));
+    b.addEventListener("click", () => {
+      track(cfg ? "part_add" : "part_select", { category: part.key, part: id });
+      cfg ? addItem(part.key, id) : (recipe[part.key] !== id && change(() => { recipe[part.key] = id; }, true));
+    });
     box.appendChild(b);
   });
 }
@@ -390,6 +410,7 @@ function renderGallery() {
   $("#more").hidden = mine || !GalleryStore.hasMore;
 }
 async function setGalleryMode(m) {
+  if (m === "mine") track("gallery_mine");
   galleryMode = m; renderGallery();
   if (m === "mine" && minePosts === null) {
     try { minePosts = await GalleryStore.loadMine(); } catch (e) { console.error(e); minePosts = []; $("#gState").textContent = T.gallery_error; return; }
@@ -415,6 +436,7 @@ function go(next, push = true) {
   const hash = { intro1: "#", intro2: "#intro", main: "#make", gallery: "#gallery" }[next];
   if (push) { try { history.pushState({ view: next }, "", hash); } catch {} }
   window.scrollTo(0, 0);
+  track("page_view", { page_title: VIEW_TITLES[next], page_location: location.origin + location.pathname + "#" + next });
   if (next.startsWith("intro")) { fitFrames(); playIntro(next); }
   if (next === "gallery") { renderGallery(); if (!galleryLoaded) loadGallery(true); $("#gTitle").focus({ preventScroll: true }); }
 }
@@ -423,6 +445,7 @@ const viewFromHash = () => ({ "#gallery": "gallery", "#make": "main", "#intro": 
 /* ---------- 완성 팝업 ---------- */
 const NICK_KEY = "suri-maker-nick";
 function openDone() {
+  track("finish_open", { items: recipe.items.length - 1 });
   selected = null; renderSel(); updateTools();
   $("#donePreview").replaceChildren(suriEl(recipe));
   try { if (!$("#nick").value) $("#nick").value = localStorage.getItem(NICK_KEY) || ""; } catch {}
@@ -438,6 +461,7 @@ async function post() {
     try { localStorage.setItem(NICK_KEY, nickname); } catch {}
     posts = [p, ...posts.filter(x => x.id !== p.id)]; justPosted = p.id; galleryMode = "all";
     if (minePosts !== null) minePosts = [p, ...minePosts.filter(x => x.id !== p.id)]; galleryLoaded = galleryLoaded || GalleryStore.mode === "local";
+    track("gallery_post", { items: recipe.items.length - 1 });
     $("#caption").value = ""; updateCounts(); $("#done").close(); go("gallery"); toast(T.toast_posted);
     if (GalleryStore.mode === "shared" && !galleryLoaded) loadGallery(true);
     setTimeout(() => { justPosted = null; }, 1500);
@@ -474,6 +498,7 @@ async function openCard({ recipe: r, name, nick, post: p }) {
     /* 저장은 내 수리(또는 방금 만든 수리)만 가능 — 남의 카드는 보기만 */
     const own = !p || p.authorId === GalleryStore.uid;
     cardCanSave = own || GalleryStore.isAdmin;
+    track("card_view", { from: p ? "gallery" : "popup", own });
     $("#cardSave").hidden = !cardCanSave; $("#cardHint").hidden = !cardCanSave;
     $("#cardImg").classList.toggle("locked", !cardCanSave);
     $("#cardDlg").showModal();
@@ -481,6 +506,7 @@ async function openCard({ recipe: r, name, nick, post: p }) {
 }
 async function saveCard() {
   if (!cardCanvas || !cardCanSave) return;
+  track("card_save", { from: cardPost ? "gallery" : "popup" });
   const blob = await new Promise(res => cardCanvas.toBlob(res, "image/png"));
   const filename = "63officelife-" + cardName.replace(/[\\/:*?"<>|\s]+/g, "_") + ".png";
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename;
@@ -510,31 +536,74 @@ function renderAdmin() {
   bar.hidden = false;
   const s = GalleryStore;
   if (s.mode !== "shared") { $("#adminInfo").textContent = "관리자 모드는 Firebase 연결 후 사용할 수 있어요."; $("#adminLogin").hidden = $("#adminLogout").hidden = true; return; }
-  $("#adminLogin").hidden = !!s.email; $("#adminLogout").hidden = !s.email; $("#adminExport").hidden = !s.isAdmin;
+  $("#adminLogin").hidden = !!s.email; $("#adminLogout").hidden = !s.email; $("#adminExport").hidden = !s.isAdmin; $("#adminImages").hidden = !s.isAdmin;
   $("#adminInfo").textContent = !s.email ? "관리자 모드" : (s.isAdmin ? "관리자: " + s.email + " · 모든 카드를 삭제할 수 있어요" : s.email + " 은(는) 관리자로 등록되지 않았어요");
 }
 /* 참여 목록을 엑셀용 CSV로 내려받기 */
-async function exportList() {
-  const btn = $("#adminExport"); btn.disabled = true; const label = btn.textContent; btn.textContent = "불러오는 중…";
-  try {
-    const list = await GalleryStore.loadAll();
+function fileNameFor(p, i) {
+  const safe = s => String(s || "").trim().replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 20) || "이름없음";
+  return String(i + 1).padStart(3, "0") + "_" + safe(cleanName(p.caption)) + "_" + safe(cleanNick(p.nickname)) + "_" + String(p.id).slice(0, 6);
+}
+function buildCsv(list) {
     const toDate = v => (v && typeof v.toDate === "function") ? v.toDate() : (v ? new Date(v) : null);
     const fmt = d => d ? new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(d) : "";
     const count = {}, nth = {};
     list.forEach(p => { count[p.authorId] = (count[p.authorId] || 0) + 1; });
     const cell = v => { let s = v == null ? "" : String(v); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
-    const rows = [["번호", "올린 시각(한국)", "수리 닉네임", "내 닉네임", "작성자 구분(같은 브라우저)", "작성자의 몇 번째 게시물", "작성자 게시물 수", "게시물 ID"]];
+    const rows = [["번호", "올린 시각(한국)", "수리 닉네임", "내 닉네임", "작성자 구분(같은 브라우저)", "작성자의 몇 번째 게시물", "작성자 게시물 수", "게시물 ID", "이미지 파일 이름"]];
     list.forEach((p, i) => {
       nth[p.authorId] = (nth[p.authorId] || 0) + 1;
-      rows.push([i + 1, fmt(toDate(p.createdAt)), p.caption || "", p.nickname || "", String(p.authorId || "").slice(0, 8), nth[p.authorId], count[p.authorId], p.id]);
+      rows.push([i + 1, fmt(toDate(p.createdAt)), p.caption || "", p.nickname || "", String(p.authorId || "").slice(0, 8), nth[p.authorId], count[p.authorId], p.id, fileNameFor(p, i) + ".png"]);
     });
-    const csv = "\uFEFF" + rows.map(r => r.map(cell).join(",")).join("\r\n");
+    return "\uFEFF" + rows.map(r => r.map(cell).join(",")).join("\r\n");
+}
+const dateStamp = () => { const d = new Date(); return d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0"); };
+function downloadBlob(blob, name) {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+}
+async function exportList() {
+  const btn = $("#adminExport"); btn.disabled = true; const label = btn.textContent; btn.textContent = "불러오는 중…";
+  try {
+    const list = await GalleryStore.loadAll();
+    const csv = buildCsv(list);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const d = new Date(), stamp = d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `63officelife-참여목록-${stamp}.csv`;
-    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    downloadBlob(blob, `63officelife-참여목록-${dateStamp()}.csv`);
     toast(list.length + "건을 내려받았어요");
   } catch (e) { console.error(e); toast("목록을 불러오지 못했어요."); }
+  finally { btn.disabled = false; btn.textContent = label; }
+}
+/* 수리만 있는 정사각형 투명 배경 PNG (1026×1026) */
+async function makeSquare(r) {
+  const S = C * 2, k = S / C, cv = document.createElement("canvas"); cv.width = cv.height = S;
+  const g = cv.getContext("2d");
+  for (const l of layers(r)) g.drawImage(await loadImg(l.src), l.x * k, l.y * k, S, S);
+  return cv;
+}
+const toBlob = cv => new Promise(res => cv.toBlob(res, "image/png"));
+function loadScript(src) {
+  return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = () => rej(new Error(src)); document.head.appendChild(s); });
+}
+/* 관리자 전용: 전체 이미지(사원증 + 수리 정사각형) + 참여 목록을 압축 파일 하나로 */
+async function exportImages() {
+  const btn = $("#adminImages"); btn.disabled = true; const label = btn.textContent; btn.textContent = "불러오는 중…";
+  try {
+    if (!window.JSZip) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js");
+    const list = await GalleryStore.loadAll();
+    if (!list.length) { toast("내려받을 게시물이 없어요."); return; }
+    const zip = new window.JSZip(), cardDir = zip.folder("사원증"), sqDir = zip.folder("수리_정사각형_투명배경");
+    for (let i = 0; i < list.length; i++) {
+      btn.textContent = `이미지 만드는 중 ${i + 1}/${list.length}`;
+      const p = list[i], r = sanitize(p.recipe), name = fileNameFor(p, i) + ".png";
+      cardDir.file(name, await toBlob(await makeCard(r, cleanName(p.caption), cleanNick(p.nickname))));
+      sqDir.file(name, await toBlob(await makeSquare(r)));
+    }
+    zip.file("참여목록.csv", buildCsv(list));
+    btn.textContent = "압축하는 중…";
+    const blob = await zip.generateAsync({ type: "blob", compression: "STORE" });
+    downloadBlob(blob, `63officelife-이미지-${dateStamp()}.zip`);
+    toast(list.length + "건의 이미지를 내려받았어요");
+  } catch (e) { console.error(e); toast("이미지를 만들지 못했어요. 잠시 후 다시 시도해 주세요."); }
   finally { btn.disabled = false; btn.textContent = label; }
 }
 async function adminAction(fn) {
@@ -545,6 +614,7 @@ async function adminAction(fn) {
 
 /* ---------- 시작 ---------- */
 async function start() {
+  initAnalytics();
   applyContent();
   await Promise.all([inlineSvgs(), loadParts()]);
   recipe = defaultRecipe();
@@ -555,10 +625,11 @@ async function start() {
   $("#finish").addEventListener("click", openDone);
   $("#toGallery").addEventListener("click", () => go("gallery"));
   $("#backToMain").addEventListener("click", () => go("main"));
-  $("#more").addEventListener("click", () => loadGallery(false));
+  $("#more").addEventListener("click", () => { track("gallery_more"); loadGallery(false); });
   $("#adminLogin").addEventListener("click", () => adminAction(() => GalleryStore.adminLogin()));
   $("#adminLogout").addEventListener("click", () => adminAction(() => GalleryStore.adminLogout()));
   $("#adminExport").addEventListener("click", () => { if (GalleryStore.isAdmin) exportList(); });
+  $("#adminImages").addEventListener("click", () => { if (GalleryStore.isAdmin) exportImages(); });
   $("#gAll").addEventListener("click", () => setGalleryMode("all"));
   $("#gMine").addEventListener("click", () => setGalleryMode("mine"));
   $("#caption").addEventListener("input", updateCounts); $("#nick").addEventListener("input", updateCounts);
@@ -574,8 +645,8 @@ async function start() {
   $("#cardDlg").addEventListener("click", e => { if (e.target === e.currentTarget) e.currentTarget.close(); });
   $("#intro1").addEventListener("click", e => { if (!e.target.closest("[data-skip]")) tapIntro("intro1"); });
   $("#intro2").addEventListener("click", e => { if (!e.target.closest("[data-skip],#startBtn")) tapIntro("intro2"); });
-  document.querySelectorAll("[data-skip]").forEach(b => b.addEventListener("click", () => go("main")));
-  $("#startBtn").addEventListener("click", () => go("main"));
+  document.querySelectorAll("[data-skip]").forEach(b => b.addEventListener("click", () => { track("intro_skip", { from: b.closest(".intro").id }); go("main"); }));
+  $("#startBtn").addEventListener("click", () => { track("intro_complete"); go("main"); });
   window.addEventListener("popstate", () => go(viewFromHash(), false));
   window.addEventListener("resize", fitFrames);
   document.addEventListener("keydown", e => {
