@@ -49,7 +49,8 @@ window.CONTENT = {
   ],
 
   /* 사원증 카드 */
-  card_save: "이미지 저장",
+  card_save: "사원증 저장",
+  card_save_suri: "수리만 저장",   // 투명 배경 정사각형 PNG
   card_close: "닫기",
   card_delete: "삭제",
   card_hint: "이미지를 길게 눌러 저장할 수도 있어요.",

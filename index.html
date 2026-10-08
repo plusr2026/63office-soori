@@ -119,10 +119,13 @@
 <dialog id="cardDlg" aria-label="사원증 이미지">
   <div class="card-pop">
     <img id="cardImg" alt="">
+    <div class="card-saves" id="cardSaves">
+      <button class="save" id="cardSave" data-text="card_save">사원증 저장</button>
+      <button class="save-suri" id="cardSaveSuri" data-text="card_save_suri">수리만 저장</button>
+    </div>
     <div class="card-actions">
-      <button class="del" id="cardDel" hidden data-text="card_delete"></button>
-      <button class="close" id="cardClose" data-text="card_close"></button>
-      <button class="save" id="cardSave" data-text="card_save"></button>
+      <button class="del" id="cardDel" hidden data-text="card_delete">삭제</button>
+      <button class="close" id="cardClose" data-text="card_close">닫기</button>
     </div>
     <p class="card-hint" id="cardHint" data-text="card_hint"></p>
   </div>

@@ -489,26 +489,28 @@ async function makeCard(r, name, nick) {
   g.drawImage(await loadImg(svgUrl(await getSvg("design/plus-logo.svg"))), 123, 466, 104, 22);
   return cv;
 }
-let cardCanvas = null, cardName = "", cardPost = null, cardCanSave = false;
+let cardCanvas = null, cardName = "", cardPost = null, cardCanSave = false, cardRecipe = null;
 async function openCard({ recipe: r, name, nick, post: p }) {
   try {
-    cardCanvas = await makeCard(r, name, nick); cardName = name; cardPost = p || null;
+    cardCanvas = await makeCard(r, name, nick); cardName = name; cardPost = p || null; cardRecipe = r;
     $("#cardImg").src = cardCanvas.toDataURL("image/png"); $("#cardImg").alt = name + " 사원증 이미지";
     $("#cardDel").hidden = !(p && (p.authorId === GalleryStore.uid || GalleryStore.isAdmin));
     /* 저장은 내 수리(또는 방금 만든 수리)만 가능 — 남의 카드는 보기만 */
     const own = !p || p.authorId === GalleryStore.uid;
     cardCanSave = own || GalleryStore.isAdmin;
     track("card_view", { from: p ? "gallery" : "popup", own });
-    $("#cardSave").hidden = !cardCanSave; $("#cardHint").hidden = !cardCanSave;
+    $("#cardSaves").hidden = !cardCanSave; $("#cardHint").hidden = !cardCanSave;
     $("#cardImg").classList.toggle("locked", !cardCanSave);
     $("#cardDlg").showModal();
   } catch (e) { console.error(e); }
 }
-async function saveCard() {
+/* type: "card" = 사원증 그대로, "suri" = 수리만 (정사각형 투명 배경) */
+async function saveCard(type) {
   if (!cardCanvas || !cardCanSave) return;
-  track("card_save", { from: cardPost ? "gallery" : "popup" });
-  const blob = await new Promise(res => cardCanvas.toBlob(res, "image/png"));
-  const filename = "63officelife-" + cardName.replace(/[\\/:*?"<>|\s]+/g, "_") + ".png";
+  track("card_save", { from: cardPost ? "gallery" : "popup", type });
+  const cv = type === "suri" ? await makeSquare(cardRecipe) : cardCanvas;
+  const blob = await new Promise(res => cv.toBlob(res, "image/png"));
+  const filename = "63officelife-" + (type === "suri" ? "수리-" : "사원증-") + cardName.replace(/[\\/:*?"<>|\s]+/g, "_") + ".png";
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
@@ -638,7 +640,8 @@ async function start() {
   $("#doneClose").addEventListener("click", () => $("#done").close());
   $("#done").addEventListener("click", e => { if (e.target === e.currentTarget) e.currentTarget.close(); });
   $("#cardClose").addEventListener("click", () => $("#cardDlg").close());
-  $("#cardSave").addEventListener("click", saveCard);
+  $("#cardSave").addEventListener("click", () => saveCard("card"));
+  $("#cardSaveSuri").addEventListener("click", () => saveCard("suri"));
   $("#cardImg").addEventListener("contextmenu", e => { if (!cardCanSave) e.preventDefault(); });
   $("#cardImg").addEventListener("dragstart", e => { if (!cardCanSave) e.preventDefault(); });
   $("#cardDel").addEventListener("click", deleteCardPost);

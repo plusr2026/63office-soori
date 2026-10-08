@@ -166,7 +166,7 @@ Figma에서 해당 요소를 선택 → Export → **SVG**로 내보낸 뒤, 아
 | part_select / part_add | 눈·입 선택 / 그 외 파츠 추가 (category, part 값으로 인기 파츠 확인) |
 | finish_open | "PLUS 해서 완성하기" 클릭 |
 | gallery_post | 갤러리에 올리기 성공 |
-| card_view / card_save | 사원증 보기 / 이미지 저장 |
+| card_view / card_save | 사원증 보기 / 이미지 저장 (type: card = 사원증, suri = 수리만) |
 | gallery_mine / gallery_more | "내 수리" / "더 보기" 클릭 |
 
 - **단계별 이탈 보기**: 탐색 → 유입경로 탐색 분석에서 단계를 page_view(인트로1) → page_view(꾸미기) → finish_open → gallery_post 순으로 설정
