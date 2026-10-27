@@ -5,9 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light">
 <title>63 OFFICE LIFE with SOORI</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="preload" href="fonts/Maplestory-Light-subset.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/Maplestory-Bold-subset.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css">
 <!-- 문구 → content.js / 갤러리 연결 → firebase-config.js / 파츠 목록 → parts.json -->
 <script src="content.js"></script>
@@ -23,122 +22,138 @@
 <!-- 인트로 1 -->
 <section class="view intro" id="intro1" aria-label="인트로">
   <div class="frame">
+    <img class="abs fill bgimg" src="design/intro-bg.png" alt="">
+    <div class="abs dialog" id="dlg1" style="left:39px;top:578px">
+      <span class="svg-slot" data-svg="design/dialog.svg" aria-hidden="true"></span>
+      <p class="dlg-text" data-type="intro1_dialog"></p>
+    </div>
     <button class="skip" data-skip data-text="skip"></button>
-    <div class="abs svg-fit reveal" data-step="0" style="left:143px;top:197px;width:104px"><span class="svg-slot" data-svg="design/icon-63.svg"></span></div>
-    <p class="abs i-text reveal" data-step="1" data-lines="intro1_p1" style="left:30px;top:466px;width:330px;font-weight:600"></p>
-    <p class="abs i-text reveal" data-step="2" data-lines="intro1_p2" style="left:30px;top:533px;width:330px;color:rgba(0,0,0,.5)"></p>
   </div>
 </section>
 
-<!-- 인트로 2 -->
+<!-- 인트로 2 (배경이 같아 장면은 그대로, 말풍선만 바뀜) -->
 <section class="view intro" id="intro2" aria-label="인트로" hidden>
   <div class="frame">
+    <img class="abs fill bgimg" src="design/intro-bg.png" alt="">
+    <div class="abs rail" id="rail" aria-label="여러 모습의 수리 카드, 옆으로 넘겨 볼 수 있어요">
+      <div class="rail-in" id="railIn"><div class="rail-track" id="railTrack"></div></div>
+    </div>
+    <div class="abs dialog" style="left:39px;top:578px">
+      <span class="svg-slot" data-svg="design/dialog.svg" aria-hidden="true"></span>
+      <p class="dlg-text" data-type="intro2_dialog"></p>
+    </div>
     <button class="skip" data-skip data-text="skip"></button>
-    <div class="abs svg-fit reveal" data-step="0" style="left:183px;top:58px;width:24px"><span class="svg-slot" data-svg="design/icon-63.svg"></span></div>
-    <p class="abs i-text reveal" data-step="1" data-lines="intro2_p1" style="left:20px;top:126px;width:350px;font-weight:500"></p>
-    <p class="abs i-text reveal" data-step="2" data-lines="intro2_p2" style="left:60px;top:260px;width:270px;font-size:22px;font-weight:700;line-height:1.45"></p>
-    <div class="abs svg-fit" style="left:-59px;top:413px;width:482px"><span class="svg-slot" data-svg="design/intro-soori.svg"></span></div>
-    <button class="abs start-btn" id="startBtn" aria-label="수리와 함께 출근하기"><span class="lbl svg-fit" aria-hidden="true"><span class="svg-slot" data-svg="design/label-start.svg"></span></span></button>
   </div>
 </section>
 
-<!-- 메인 꾸미기 -->
-<main class="view" id="main" hidden>
-  <div class="top-band">
-    <h1 class="title-logo svg-fit" style="margin:0 auto"><span class="sr">63 OFFICE LIFE with SOORI</span><span class="svg-slot" data-svg="design/title.svg"></span></h1>
-    <p class="sub" data-lines="main_sub"></p>
-    <div class="stage" id="stage" tabindex="0" aria-label="꾸미는 중인 수리. 요소를 눌러 선택하고 끌어서 옮길 수 있어요.">
+<!-- 인트로 3 -->
+<section class="view intro" id="intro3" aria-label="인트로" hidden>
+  <div class="frame">
+    <img class="abs fill bgimg" src="design/intro-bg.png" alt="">
+    <img class="abs" id="i3Badge" src="design/intro3-badge.png" alt="" style="left:-75.2px;top:-18px;width:425.4px">
+    <img class="abs" id="i3Suri" src="design/intro3-suri.png" alt="" style="left:93px;top:271px;width:291px">
+    <div class="abs svg-fit" id="i3Bubble" style="left:18px;top:255px;width:149px" aria-hidden="true"><span class="svg-slot" data-svg="design/intro3-bubble.svg"></span></div>
+    <button class="abs start3" id="startBtn" style="left:63px;top:673px;width:263px;height:87px" aria-label="수리와 출근하기"><img src="design/intro3-button.svg" alt=""></button>
+  </div>
+</section>
+
+<!-- 메인 꾸미기 (390×844, 화면 고정 · 파츠 칸만 스크롤) -->
+<section class="view intro mainview" id="main" hidden aria-label="수리 꾸미기">
+  <div class="frame">
+    <img class="abs" src="design/main-bg.png" alt="" style="left:0;top:0;width:390px">
+    <button class="abs icon-btn" id="mainBack" style="left:14px;top:28px" aria-label="인트로로 돌아가기"><span class="svg-slot" data-svg="design/btn-back.svg"></span></button>
+    <h1 class="abs svg-fit" style="left:120px;top:29px;width:150px;margin:0"><span class="sr">63 OFFICE LIFE with SOORI</span><span class="svg-slot" data-svg="design/title-main.svg"></span></h1>
+    <button class="abs icon-btn" id="toGallery" style="left:337px;top:28px" aria-label="수리의 63 오피스라이프 구경하기"><span class="svg-slot" data-svg="design/btn-gallery.svg"></span></button>
+    <div class="abs stage" id="stage" tabindex="0" style="left:80px;top:84px" aria-label="꾸미는 중인 수리. 요소를 눌러 선택하고 끌어서 옮길 수 있어요.">
       <div id="stageSuri"></div>
       <div class="sel" id="selBox" hidden></div>
     </div>
-    <div class="tools" role="toolbar" aria-label="편집 도구">
-      <button class="tool" id="tUndo" aria-label="뒤로가기" title="뒤로가기 (방금 한 작업 취소)"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
-      <button class="tool" id="tReset" aria-label="리셋" title="리셋 (처음 상태로, 전체 삭제)"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></button>
-      <button class="tool" id="tRedo" aria-label="앞으로가기" title="앞으로가기 (취소한 작업 다시 하기)"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
-      <button class="tool" id="tFwd" aria-label="앞으로 보내기" title="앞으로 보내기"><svg viewBox="0 0 24 24"><rect x="8" y="3" width="13" height="13" rx="2" fill="#000"/><rect x="3" y="8" width="13" height="13" rx="2"/></svg></button>
-      <button class="tool" id="tBack" aria-label="뒤로 보내기" title="뒤로 보내기"><svg viewBox="0 0 24 24"><rect x="8" y="3" width="13" height="13" rx="2"/><rect x="3" y="8" width="13" height="13" rx="2" fill="#F5F5F5"/></svg></button>
-      <button class="tool" id="tDelete" aria-label="삭제하기" title="삭제하기"><svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/></svg></button>
-    </div>
+    <div class="abs svg-fit" style="left:17px;top:330px;width:357px" aria-hidden="true"><span class="svg-slot" data-svg="design/tool-panel.svg"></span></div>
+    <div role="toolbar" aria-label="편집 도구"><button class="tool abs" id="tUndo" aria-label="뒤로가기" title="뒤로가기" style="left:34.0px;top:341.9px"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button><button class="tool abs" id="tReset" aria-label="리셋" title="리셋" style="left:89.2px;top:341.9px"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></button><button class="tool abs" id="tRedo" aria-label="앞으로가기" title="앞으로가기" style="left:144.5px;top:341.9px"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button><button class="tool abs" id="tFwd" aria-label="앞으로 보내기" title="앞으로 보내기" style="left:199.7px;top:341.9px"><svg viewBox="0 0 24 24"><rect x="8" y="3" width="13" height="13" fill="#222"/><rect x="3" y="8" width="13" height="13"/></svg></button><button class="tool abs" id="tBack" aria-label="뒤로 보내기" title="뒤로 보내기" style="left:255.0px;top:341.9px"><svg viewBox="0 0 24 24"><rect x="8" y="3" width="13" height="13"/><rect x="3" y="8" width="13" height="13" fill="#FFF8DE"/></svg></button><button class="tool abs" id="tDelete" aria-label="삭제하기" title="삭제하기" style="left:310.2px;top:341.9px"><svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/></svg></button></div>
+    <div class="abs px4 mpanel" style="left:17px;top:416px;width:357px;height:330px" aria-hidden="true"></div>
+    <div class="abs tabs" role="tablist" id="tabs" style="left:34px;top:432px;width:321px"></div>
+    <div class="abs options" id="options" role="group" style="left:34px;top:472px;width:321px;height:258px"></div>
+    <button class="abs imgbtn" id="finish" style="left:47px;top:762px;width:297px;height:58px"><span class="svg-slot" data-svg="design/btn-finish.svg" aria-hidden="true"></span><b data-text="btn_finish">PLUS 해서 완성하기</b></button>
   </div>
-  <div class="panel">
-    <div class="tabs" role="tablist" id="tabs"></div>
-    <div class="options" id="options" role="group"></div>
+</section>
+
+<!-- 사원증 발급 페이지 (390×640 시안) -->
+<section class="view intro issuepage" id="issuePage" hidden aria-label="사원증 발급">
+  <div class="frame frame2">
+    <div class="abs issue-bgwrap" aria-hidden="true"><span class="svg-slot" data-svg="design/issue-bg.svg"></span><span class="svg-slot" data-svg="design/issue-bg.svg"></span></div>
+    <button class="abs icon-btn" id="issueClose" style="left:14px;top:28px" aria-label="꾸미기로 돌아가기"><span class="svg-slot" data-svg="design/btn-back.svg"></span></button>
+    <h2 class="abs issue-title" id="issueTitle" data-text="issue_title">사원증이 발급됐어요!</h2>
+    <div class="abs glow" id="issueGlow"></div>
+    <div class="abs svg-fit" style="left:47px;top:231px;width:295.3px" aria-hidden="true"><span class="svg-slot" data-svg="design/slot.svg"></span></div>
+    <div class="abs svg-fit lamp" id="issueLamp" style="left:323px;top:211px;width:19px" aria-hidden="true"><span class="svg-slot" data-svg="design/lamp.svg"></span></div>
+    <div class="abs issue-clip" id="issueClip"><img id="issueCard" alt=""></div>
+    <i class="abs spark" style="left:30px;top:366px"></i><i class="abs spark" style="left:350px;top:436px"></i><i class="abs spark" style="left:44px;top:576px"></i><i class="abs spark" style="left:338px;top:306px"></i>
+    <button class="abs imgbtn" id="post" style="left:29px;top:760px;width:333px;height:60px"><span class="svg-slot" data-svg="design/btn-start.svg" aria-hidden="true"></span><b data-text="btn_popup_start">63 오피스라이프 시작하기</b></button>
   </div>
-  <div class="cta">
-    <button class="btn-y" id="finish" aria-label="PLUS 해서 완성하기"><span class="lbl svg-fit" aria-hidden="true"><span class="svg-slot" data-svg="design/label-finish.svg"></span></span></button>
-    <button class="btn-k" id="toGallery" aria-label="수리의 63 오피스라이프 구경하기"><span class="lbl svg-fit" aria-hidden="true"><span class="svg-slot" data-svg="design/label-gallery.svg"></span></span></button>
-  </div>
-</main>
+</section>
 
 <!-- 갤러리 -->
 <section class="view" id="gallery" hidden>
-  <div class="g-bg" aria-hidden="true"><span class="svg-slot" data-svg="design/gallery-bg.svg"></span></div>
-  <button class="back" id="backToMain" aria-label="꾸미기로 돌아가기"><svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7"/></svg></button>
-  <div class="g-head">
-    <h1 class="title-logo svg-fit" id="gTitle" tabindex="-1" style="margin:0 auto;outline:none"><span class="sr">63 OFFICE LIFE with SOORI 갤러리</span><span class="svg-slot" data-svg="design/title.svg"></span></h1>
-    <p class="g-sub" data-lines="gallery_sub"></p>
+  <div class="g-bg svg-fit" aria-hidden="true"><span class="svg-slot" data-svg="design/gallery-bg.svg"></span></div>
+  <div class="col g-col">
+    <button class="icon-btn back2" id="backToMain" aria-label="꾸미기로 돌아가기"><span class="svg-slot" data-svg="design/btn-back.svg"></span></button>
+    <h1 class="g-title svg-fit" id="gTitle" tabindex="-1"><span class="sr">63 OFFICE LIFE with SOORI 갤러리</span><span class="svg-slot" data-svg="design/title-gallery.svg"></span></h1>
+    <div class="admin-bar" id="adminBar" hidden>
+      <span id="adminInfo"></span>
+      <button id="adminLogin">관리자 로그인</button>
+      <button id="adminExport" hidden>참여 목록 내려받기</button>
+      <button id="adminImages" hidden>전체 이미지 내려받기</button>
+      <button id="adminLogout" hidden>로그아웃</button>
+    </div>
+    <div class="g-tabs" role="tablist" aria-label="갤러리 보기 방식">
+      <button class="px g-tab" id="gAll" role="tab" aria-selected="true" data-text="gallery_tab_all"></button>
+      <button class="px g-tab" id="gMine" role="tab" aria-selected="false" data-text="gallery_tab_mine"></button>
+    </div>
+    <p class="g-note" id="gMineNote" hidden data-text="gallery_mine_note"></p>
+    <div class="grid" id="grid"></div>
+    <p class="g-state" id="gState"></p>
+    <button class="px px-k pbtn light more" id="more" hidden data-text="gallery_more"></button>
   </div>
-  <div class="admin-bar" id="adminBar" hidden>
-    <span id="adminInfo"></span>
-    <button id="adminLogin">관리자 로그인</button>
-    <button id="adminExport" hidden>참여 목록 내려받기</button>
-    <button id="adminImages" hidden>전체 이미지 내려받기</button>
-    <button id="adminLogout" hidden>로그아웃</button>
-  </div>
-  <div class="g-tabs" role="tablist" aria-label="갤러리 보기 방식">
-    <button class="g-tab" id="gAll" role="tab" aria-selected="true" data-text="gallery_tab_all"></button>
-    <button class="g-tab" id="gMine" role="tab" aria-selected="false" data-text="gallery_tab_mine"></button>
-  </div>
-  <p class="g-note" id="gMineNote" hidden data-text="gallery_mine_note"></p>
-  <div class="grid" id="grid"></div>
-  <p class="g-state" id="gState"></p>
-  <button class="more" id="more" hidden data-text="gallery_more"></button>
 </section>
 </div>
 
-<!-- 완성 팝업 -->
-<dialog id="done" aria-labelledby="doneTitle">
-  <div class="pop">
-    <button class="x-btn" id="doneClose" aria-label="닫고 계속 꾸미기"><svg viewBox="0 0 14 14"><path d="M2 2l10 10M12 2 2 12"/></svg></button>
-    <h2 class="title-logo svg-fit" id="doneTitle" style="margin:0 auto"><span class="sr">완성된 수리</span><span class="svg-slot" data-svg="design/title.svg"></span></h2>
-    <div class="pop-suri" id="donePreview"></div>
-    <div class="fields">
-      <div><label for="caption" data-text="popup_suri_label"></label><div class="input"><input id="caption" maxlength="15" data-placeholder="popup_suri_placeholder" autocomplete="off"><span class="count" id="count">0/15</span></div></div>
-      <div><label for="nick" data-text="popup_nick_label"></label><div class="input"><input id="nick" maxlength="10" data-placeholder="popup_nick_placeholder" autocomplete="nickname"><span class="count" id="nickCount">0/10</span></div></div>
-    </div>
-    <p class="pop-note" data-lines="popup_note"></p>
-    <div class="pop-actions">
-      <button class="btn-y" id="post" aria-label="63 오피스라이프 시작하기"><span class="lbl svg-fit" aria-hidden="true"><span class="svg-slot" data-svg="design/label-popup-start.svg"></span></span></button>
-      <button class="dl-btn" id="save" aria-label="사원증 이미지 만들기" title="사원증 이미지 저장"><svg viewBox="0 0 20 26"><path d="M10 2v16M3.5 11.5 10 18l6.5-6.5M2 24h16"/></svg></button>
-    </div>
-    <p class="mode-note" id="modeNote" hidden></p>
+<!-- 이름 짓기 팝업 (픽셀 창처럼 열림) -->
+<dialog id="done" aria-labelledby="doneQ">
+  <div class="namepop" id="namepop">
+    <span class="svg-slot abs fill" data-svg="design/popup-name.svg" aria-hidden="true"></span>
+    <button class="abs tri-btn" id="doneClose" style="left:318px;top:8px" aria-label="닫고 계속 꾸미기"></button>
+    <p class="abs dlg-text" id="doneQ" data-type="popup_question" style="left:21px;top:45.5px"></p>
+    <div class="abs nin" style="left:34px;top:118px"><input id="caption" maxlength="15" data-placeholder="popup_suri_placeholder" autocomplete="off" aria-label="수리 닉네임"><span class="count" id="count">0/15</span></div>
+    <div class="abs nin" style="left:34px;top:197px"><input id="nick" maxlength="10" data-placeholder="popup_nick_placeholder" autocomplete="nickname" aria-label="내 닉네임"><span class="count" id="nickCount">0/10</span></div>
+    <button class="abs imgbtn" id="issue" style="left:32px;top:270px;width:297px;height:58px"><span class="svg-slot" data-svg="design/btn-popup.svg" aria-hidden="true"></span><b data-text="btn_issue">사원증 발급하기</b></button>
   </div>
 </dialog>
 
-<!-- 사원증 카드 -->
+<!-- 사원증 보기 -->
 <dialog id="cardDlg" aria-label="사원증 이미지">
   <div class="card-pop">
+    <button class="icon-btn abs" id="cardClose" style="left:31px;top:16px" aria-label="닫기"><span class="svg-slot" data-svg="design/btn-back.svg"></span></button>
     <img id="cardImg" alt="">
     <div class="card-saves" id="cardSaves">
-      <button class="save" id="cardSave" data-text="card_save">사원증 저장</button>
-      <button class="save-suri" id="cardSaveSuri" data-text="card_save_suri">수리만 저장</button>
+      <button class="px px-y pbtn" id="cardSave" data-text="card_save">사원증 저장</button>
+      <button class="px px-k pbtn light" id="cardSaveSuri" data-text="card_save_suri">수리만 저장</button>
     </div>
-    <div class="card-actions">
-      <button class="del" id="cardDel" hidden data-text="card_delete">삭제</button>
-      <button class="close" id="cardClose" data-text="card_close">닫기</button>
-    </div>
-    <p class="card-hint" id="cardHint" data-text="card_hint"></p>
+    <button class="card-del" id="cardDel" hidden data-text="card_delete">삭제</button>
   </div>
 </dialog>
 <dialog id="confirmDlg" aria-labelledby="confirmMsg">
   <div class="confirm">
     <p id="confirmMsg" data-text="confirm_delete"></p>
     <div class="confirm-actions">
-      <button class="no" id="confirmNo" data-text="confirm_no"></button>
-      <button class="yes" id="confirmYes" data-text="confirm_yes"></button>
+      <button class="px px-g pbtn" id="confirmNo" data-text="confirm_no"></button>
+      <button class="px px-k pbtn light" id="confirmYes" data-text="confirm_yes"></button>
     </div>
   </div>
 </dialog>
+
+<!-- 암전 · 입주 완료 -->
+<div class="blackout" id="blackout" aria-live="polite"><span id="blackoutText"></span></div>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
