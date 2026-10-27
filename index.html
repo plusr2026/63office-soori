@@ -68,9 +68,9 @@
       <div id="stageSuri"></div>
       <div class="sel" id="selBox" hidden></div>
     </div>
-    <div class="abs svg-fit" style="left:17px;top:330px;width:357px" aria-hidden="true"><span class="svg-slot" data-svg="design/tool-panel.svg"></span></div>
+    <div class="abs svg-fit" id="toolPanel" style="left:17px;top:330px;width:357px" aria-hidden="true"><span class="svg-slot" data-svg="design/tool-panel.svg"></span></div>
     <div role="toolbar" aria-label="편집 도구"><button class="tool abs" id="tUndo" aria-label="뒤로가기" title="뒤로가기" style="left:34.0px;top:341.9px"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button><button class="tool abs" id="tReset" aria-label="리셋" title="리셋" style="left:89.2px;top:341.9px"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></button><button class="tool abs" id="tRedo" aria-label="앞으로가기" title="앞으로가기" style="left:144.5px;top:341.9px"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button><button class="tool abs" id="tFwd" aria-label="앞으로 보내기" title="앞으로 보내기" style="left:199.7px;top:341.9px"><svg viewBox="0 0 24 24"><rect x="8" y="3" width="13" height="13" fill="#222"/><rect x="3" y="8" width="13" height="13"/></svg></button><button class="tool abs" id="tBack" aria-label="뒤로 보내기" title="뒤로 보내기" style="left:255.0px;top:341.9px"><svg viewBox="0 0 24 24"><rect x="8" y="3" width="13" height="13"/><rect x="3" y="8" width="13" height="13" fill="#FFF8DE"/></svg></button><button class="tool abs" id="tDelete" aria-label="삭제하기" title="삭제하기" style="left:310.2px;top:341.9px"><svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/></svg></button></div>
-    <div class="abs px4 mpanel" style="left:17px;top:416px;width:357px;height:330px" aria-hidden="true"></div>
+    <div class="abs px4 mpanel" id="mPanel" style="left:17px;top:416px;width:357px;height:330px" aria-hidden="true"></div>
     <div class="abs tabs" role="tablist" id="tabs" style="left:34px;top:432px;width:321px"></div>
     <div class="abs options" id="options" role="group" style="left:34px;top:472px;width:321px;height:258px"></div>
     <button class="abs imgbtn" id="finish" style="left:47px;top:762px;width:297px;height:58px"><span class="svg-slot" data-svg="design/btn-finish.svg" aria-hidden="true"></span><b data-text="btn_finish">PLUS 해서 완성하기</b></button>
@@ -80,11 +80,11 @@
 <!-- 사원증 발급 페이지 (390×640 시안) -->
 <section class="view intro issuepage" id="issuePage" hidden aria-label="사원증 발급">
   <div class="frame frame2">
-    <div class="abs issue-bgwrap" aria-hidden="true"><span class="svg-slot" data-svg="design/issue-bg.svg"></span><span class="svg-slot" data-svg="design/issue-bg.svg"></span></div>
+    <div class="abs issue-bgwrap" id="issueBg" aria-hidden="true"><span class="svg-slot" data-svg="design/issue-bg.svg"></span><span class="svg-slot" data-svg="design/issue-bg.svg"></span></div>
     <button class="abs icon-btn" id="issueClose" style="left:14px;top:28px" aria-label="꾸미기로 돌아가기"><span class="svg-slot" data-svg="design/btn-back.svg"></span></button>
     <h2 class="abs issue-title" id="issueTitle" data-text="issue_title">사원증이 발급됐어요!</h2>
     <div class="abs glow" id="issueGlow"></div>
-    <div class="abs svg-fit" style="left:47px;top:231px;width:295.3px" aria-hidden="true"><span class="svg-slot" data-svg="design/slot.svg"></span></div>
+    <div class="abs svg-fit" id="issueSlot" style="left:47px;top:231px;width:295.3px" aria-hidden="true"><span class="svg-slot" data-svg="design/slot.svg"></span></div>
     <div class="abs svg-fit lamp" id="issueLamp" style="left:323px;top:211px;width:19px" aria-hidden="true"><span class="svg-slot" data-svg="design/lamp.svg"></span></div>
     <div class="abs issue-clip" id="issueClip"><img id="issueCard" alt=""></div>
     <i class="abs spark" style="left:30px;top:366px"></i><i class="abs spark" style="left:350px;top:436px"></i><i class="abs spark" style="left:44px;top:576px"></i><i class="abs spark" style="left:338px;top:306px"></i>

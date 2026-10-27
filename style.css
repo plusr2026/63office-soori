@@ -281,3 +281,12 @@ dialog#done,dialog#cardDlg{overflow:hidden}
 .issue-title{top:172px}
 .glow{top:222px}
 .frame2 .issue-clip{top:256.7px}
+
+/* ===== 화면 비율 통일 ===== */
+html,body{overflow-x:hidden}
+/* 인트로: 그림 프레임 바깥도 같은 배경색으로 이어지게 */
+#intro1,#intro2,#intro3{background:linear-gradient(180deg,#FFD118 0%,#FFE476 47%,#FFF2BC 80%,#FFF2BC 100%)}
+/* iOS에서 입력칸을 누를 때 화면이 확대되지 않도록 16px 이상 */
+.nin input,.input input{font-size:16px}
+.mainview .frame,.issuepage .frame{transform-origin:top center;align-self:flex-start}
+.issue-bgwrap{height:auto;bottom:0}

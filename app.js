@@ -369,10 +369,42 @@ let introTimers = [], introAnims = [];
 const clearIntro = () => { introTimers.forEach(clearTimeout); introTimers = []; introAnims.forEach(a => { try { a.finish(); } catch {} }); introAnims = []; };
 const later = (fn, ms) => introTimers.push(setTimeout(fn, ms));
 function fitFrames() {
-  /* 모든 화면을 같은 비율로: 390×844 기준 (가로 390 시안 통일) */
-  const w = Math.min(window.innerWidth, 430), h = window.innerHeight, sc = Math.min(w / 390, h / 844, 1.2);
-  document.querySelectorAll(".frame").forEach(f => { f.style.transform = `scale(${sc})`; });
-  const cf = document.getElementById("celFrame"); if (cf) cf.style.transform = `scale(${sc})`;
+  const W = Math.min(window.innerWidth, 430), H = window.innerHeight;
+  /* 인트로(그림이 고정된 화면): 390×844가 화면 안에 다 들어오게 */
+  const sFit = Math.min(W / 390, H / 844, 1.2);
+  ["#intro1", "#intro2", "#intro3"].forEach(q => { const f = document.querySelector(q + " .frame"); if (f) f.style.transform = `scale(${sFit})`; });
+  /* 꾸미기·발급 화면: 가로를 화면 폭에 꽉 채우고, 세로는 화면 높이에 맞춰 배치 */
+  const sW = Math.min(W / 390, 1.2), Hd = H / sW;
+  ["#main", "#issuePage"].forEach(q => { const f = document.querySelector(q + " .frame"); if (f) { f.style.transform = `scale(${sW})`; f.style.height = Hd + "px"; } });
+  layoutMain(Hd); layoutIssue(Hd);
+}
+/* 꾸미기: 위·아래 고정 요소는 그대로, 수리 크기와 파츠 판 높이로 남는 공간을 나눠 간격 16px 유지 */
+function layoutMain(Hd) {
+  const G = 16, FIX = 68 + G + G + 70 + G + G + 58 + 24;
+  const S = Math.round(Math.max(150, Math.min(230, Hd - FIX - 270)));
+  const P = Math.max(190, Hd - FIX - S);
+  const st = $("#stage"); if (!st) return;
+  let y = 68 + G;
+  Object.assign(st.style, { top: y + "px", left: ((390 - S) / 2) + "px", width: S + "px", height: S + "px" }); y += S + G;
+  $("#toolPanel").style.top = y + "px";
+  ["tUndo", "tReset", "tRedo", "tFwd", "tBack", "tDelete"].forEach(id => { $("#" + id).style.top = (y + 11.9) + "px"; }); y += 70 + G;
+  Object.assign($("#mPanel").style, { top: y + "px", height: P + "px" });
+  $("#tabs").style.top = (y + 16) + "px";
+  Object.assign($("#options").style, { top: (y + 56) + "px", height: (P - 72) + "px" }); y += P + G;
+  $("#finish").style.top = y + "px";
+  renderSel();
+}
+/* 발급: 버튼은 다른 화면과 같은 아래 위치, 제목~사원증 묶음은 남는 공간 가운데 */
+function layoutIssue(Hd) {
+  const btn = $("#post"); if (!btn) return;
+  const bt = Hd - 24 - 60; btn.style.top = bt + "px";
+  const blockTop = Math.max(76, 68 + (bt - 16 - 68 - 467) / 2), dy = blockTop - 36;
+  $("#issueTitle").style.top = (36 + dy) + "px";
+  $("#issueGlow").style.top = (86 + dy) + "px";
+  $("#issueSlot").style.top = (95 + dy) + "px";
+  $("#issueLamp").style.top = (75 + dy) + "px";
+  $("#issueClip").style.top = (120.7 + dy) + "px";
+  [230, 300, 440, 170].forEach((t, i) => { const sp = document.querySelectorAll("#issuePage .spark")[i]; if (sp) sp.style.top = (t + dy) + "px"; });
 }
 const CHO = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
 function typeSteps(ch) {
