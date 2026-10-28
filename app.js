@@ -225,9 +225,12 @@ function suriEl(r) {
 function change(fn, pop = false) { hist.push(clone(recipe)); if (hist.length > 60) hist.shift(); fut = []; fn(); refresh(pop); }
 function refresh(pop) { if (selected && !recipe.items.some(i => i.uid === selected)) selected = null; renderStage(pop); renderOptions(); updateTools(); }
 const itemBy = uid => recipe.items.find(i => i.uid === uid);
+/* 쫀득한 움직임: 목표를 살짝 넘쳤다 돌아오는 스프링 곡선 */
+const SPRING = "cubic-bezier(.34,1.56,.64,1)";
 function renderStage(pop) {
   const el = suriEl(recipe); $("#stageSuri").replaceChildren(el);
-  if (pop && !reduceMotion()) el.animate([{ transform: "scale(1)" }, { transform: "scale(1.03)" }, { transform: "scale(1)" }], { duration: 300, easing: "ease-out" });
+  /* 파츠를 입히면 수리가 말랑하게 눌렸다 펴짐 */
+  if (pop && !reduceMotion()) el.animate([{ transform: "scale(1,1)" }, { transform: "scale(1.07,.93)", offset: .35 }, { transform: "scale(.97,1.03)", offset: .7 }, { transform: "scale(1,1)" }], { duration: 460, easing: "ease-out", transformOrigin: "50% 100%" });
   renderSel();
 }
 function renderSel() {
@@ -250,7 +253,7 @@ function renderTabs() {
   for (const p of PARTS) {
     const b = document.createElement("button"); b.className = "tab"; b.setAttribute("role", "tab"); b.textContent = p.label;
     b.setAttribute("aria-selected", String(p.key === activeTab));
-    b.addEventListener("click", () => { activeTab = p.key; renderTabs(); renderOptions(); $("#options").scrollTop = 0; });
+    b.addEventListener("click", () => { activeTab = p.key; renderTabs(); renderOptions(); $("#options").scrollTop = 0; popOptions(); });
     t.appendChild(b);
   }
 }
@@ -368,6 +371,7 @@ const INTRO_HOLD = 1800;       // 문장이 다 나온 뒤 다음 장면으로 �
 let introTimers = [], introAnims = [];
 const clearIntro = () => { introTimers.forEach(clearTimeout); introTimers = []; introAnims.forEach(a => { try { a.finish(); } catch {} }); introAnims = []; };
 const later = (fn, ms) => introTimers.push(setTimeout(fn, ms));
+document.addEventListener("DOMContentLoaded", () => document.querySelectorAll(".intro,.frame").forEach(el => el.addEventListener("scroll", () => { el.scrollTop = 0; el.scrollLeft = 0; })));
 function fitFrames() {
   const W = Math.min(window.innerWidth, 430), H = window.innerHeight;
   /* 인트로(그림이 고정된 화면): 390×844가 화면 안에 다 들어오게 */
@@ -460,12 +464,12 @@ function playIntro(which) {
   }
   if (which === "intro3") {
     const b = $("#i3Badge"), su = $("#i3Suri"), bu = $("#i3Bubble"), btn = $("#startBtn");
-    /* 빠르게 떨어졌다가 내려앉으며 느려지고, 아주 살짝만 튕김 */
-    anim(b, [{ transform: "translateY(-720px)" }, { transform: "translateY(6px)", offset: .78, easing: "ease-in-out" }, { transform: "translateY(0)" }], { duration: 1100, delay: 100, easing: "cubic-bezier(.12,.75,.3,1)" });
+    /* 목걸이에 매달린 사원증: 중력으로 가속하며 떨어지고 → 줄이 팽팽해지며 살짝 늘어났다 돌아오고 → 좌우로 잦아드는 흔들림 */
+    anim(b, badgeDropFrames(), { duration: 1700, delay: 80, easing: "linear" });
     /* 카드가 내려앉은 뒤 수리 → 말풍선 순서 */
-    anim(su, [{ opacity: 0 }, { opacity: 1 }], { duration: 320, delay: 820, easing: "ease-out" });
-    anim(bu, [{ opacity: 0 }, { opacity: 1 }], { duration: 320, delay: 1000, easing: "ease-out" });
-    anim(btn, [{ opacity: 0 }, { opacity: 1 }], { duration: 320, delay: 1250, easing: "ease-out" });
+    anim(su, [{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "none" }], { duration: 380, delay: 560, easing: "cubic-bezier(.2,.8,.2,1)" });
+    anim(bu, [{ opacity: 0, transform: "translateY(6px) scale(.96)" }, { opacity: 1, transform: "none" }], { duration: 380, delay: 760, easing: "cubic-bezier(.2,.8,.2,1)" });
+    anim(btn, [{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "none" }], { duration: 380, delay: 980, easing: "cubic-bezier(.2,.8,.2,1)" });
     later(() => { view.dataset.done = "1"; startPulse(); }, 1600);
   }
 }
@@ -502,6 +506,22 @@ function startRail() {
 }
 function setupRail() {}
 
+/* 사원증 낙하 키프레임: 0~0.45초 중력 가속 낙하, 이후 감쇠 스프링(위아래) + 감쇠 진자(회전) */
+function badgeDropFrames() {
+  const T = 1.7, FALL = 0.45, N = 68, out = [];
+  for (let i = 0; i <= N; i++) {
+    const t = T * i / N; let y, r;
+    if (t <= FALL) { const u = t / FALL; y = -720 * (1 - u * u); r = 0; }
+    else {
+      const s = t - FALL;
+      y = 14 * Math.exp(-5.2 * s) * Math.sin(2 * Math.PI * 2.4 * s);          // 줄이 늘어났다 돌아오는 출렁임
+      r = 2.6 * Math.exp(-2.6 * s) * Math.sin(2 * Math.PI * 1.15 * s);        // 좌우로 잦아드는 흔들림
+    }
+    out.push({ offset: i / N, transform: `translateY(${y.toFixed(2)}px) rotate(${r.toFixed(3)}deg)` });
+  }
+  out[out.length - 1].transform = "translateY(0) rotate(0deg)";
+  return out;
+}
 /* "수리와 출근하기" 버튼: 작게 커졌다 작아졌다 반복 */
 let pulseAnim = null;
 function startPulse() {
@@ -575,8 +595,19 @@ function toast(msg) { if (!msg) return; const t = $("#toast"); t.textContent = m
 
 /* ---------- 페이지 전환 ---------- */
 const VIEWS = ["intro1", "intro2", "intro3", "main", "issuePage", "gallery"];
+/* 탭을 바꾸면 파츠 칸이 하나씩 통통 튀어 나옴 */
+function popOptions() {
+  if (reduceMotion()) return;
+  [...$("#options").children].slice(0, 16).forEach((o, i) => o.animate([{ opacity: 0, transform: "translateY(10px) scale(.85)" }, { opacity: 1, transform: "none" }], { duration: 420, delay: i * 28, easing: SPRING, fill: "backwards" }));
+}
 function go(next, push = true) {
+  const prev = VIEWS.find(v => !$("#" + v).hidden);
   VIEWS.forEach(v => { $("#" + v).hidden = v !== next; });
+  /* 꾸미기·갤러리로 들어올 때 살짝 커지며 안착 */
+  if (!reduceMotion() && prev && prev !== next && (next === "main" || next === "gallery")) {
+    const t = next === "main" ? $("#main .frame") : $("#gallery .g-col");
+    if (t) t.animate([{ opacity: 0, scale: ".94" }, { opacity: 1, scale: "1" }], { duration: 460, easing: SPRING });
+  }
   if (!next.startsWith("intro")) clearIntro();
   if (next !== "intro3" && pulseAnim) { pulseAnim.cancel(); pulseAnim = null; }
   const hash = { intro1: "#", intro2: "#intro2", intro3: "#intro3", main: "#make", issuePage: "#make", gallery: "#gallery" }[next];

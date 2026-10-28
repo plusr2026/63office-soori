@@ -290,3 +290,28 @@ html,body{overflow-x:hidden}
 .nin input,.input input{font-size:16px}
 .mainview .frame,.issuepage .frame{transform-origin:top center;align-self:flex-start}
 .issue-bgwrap{height:auto;bottom:0}
+#i3Badge{transform-origin:46% 0;will-change:transform}
+
+/* ===== 쫀득한 눌림 반응 (누르면 쏙, 떼면 통) ===== */
+.mainview .opt,.mainview .tool,.mainview .tab,.imgbtn,.icon-btn,.pbtn,.g-tab,.tile,.start3,.chip{transition:transform .38s cubic-bezier(.34,1.56,.64,1),box-shadow .12s ease}
+.mainview .tab:active,.icon-btn:active,.g-tab:active,.tile:active{transform:scale(.92);transition-duration:.08s}
+.imgbtn:active,.pbtn:active{transform:scale(.95);translate:none;transition-duration:.08s}
+.dialog,.namepop{will-change:transform}
+dialog[open] .card-pop{animation:popIn .45s cubic-bezier(.34,1.56,.64,1)}
+@keyframes popIn{from{transform:scale(.88);opacity:0}to{opacity:1}}
+.toast{transition:opacity .2s,transform .42s cubic-bezier(.34,1.56,.64,1)}
+
+/* ===== 입체 버튼: 파츠 칸 · 편집 도구 (윗왼쪽 밝게, 아래오른쪽 어둡게, 바닥 그림자) ===== */
+.mainview .opt,.mainview .tool{background:#FFF8DE;border:2px solid #222;box-shadow:inset 3px 3px 0 #FFFFFF,inset -3px -3px 0 #E8D9A0,0 3px 0 #222}
+.mainview .opt[aria-pressed="true"]{background:#FFE36A;border:2px solid #222;box-shadow:inset 3px 3px 0 #FFF3B0,inset -3px -3px 0 #E0B000,0 3px 0 #222}
+.mainview .opt:active,.mainview .tool:active:not(:disabled){transform:translateY(3px) scale(.97);box-shadow:inset 3px 3px 0 #E8D9A0,inset -2px -2px 0 #FFFFFF,0 0 0 #222;transition-duration:.06s}
+.mainview .opt[aria-pressed="true"]:active{box-shadow:inset 3px 3px 0 #E0B000,inset -2px -2px 0 #FFF3B0,0 0 0 #222}
+.mainview .tool:disabled{opacity:1;background:#F4F0E2;border-color:#C9C3AE;box-shadow:none}
+.mainview .tool:disabled svg{stroke:#C9C3AE}
+.mainview .tab{box-shadow:inset 2px 2px 0 #EFEFF2,inset -2px -2px 0 #BDBDC3}
+.mainview .tab[aria-selected="true"]{box-shadow:inset 2px 2px 0 #FFF3B0,inset -2px -2px 0 #E0B000,0 2px 0 #222}
+.mainview .options{padding:1px 1px 6px}
+.mainview .opt .cnt{border:1.5px solid #222}
+/* 고정 화면이 포커스 때문에 밀려 올라가지 않도록 */
+.intro{overflow:clip}
+.frame{overflow:clip}
