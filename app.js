@@ -117,7 +117,7 @@ const GalleryStore = {
   mode: "local", fb: null, db: null, uid: null, email: null, isAdmin: false, authMod: null, auth: null, cursor: null, hasMore: false, _local: [],
   async init() {
     const cfg = window.FIREBASE_CONFIG || {};
-    if (!cfg.apiKey || !cfg.projectId) { this.uid = "local-me"; return "local"; }
+    if (!cfg.apiKey || !cfg.projectId) { this.uid = "local-me"; if (Array.isArray(window.__DEMO_POSTS)) this._local = window.__DEMO_POSTS.map(p => ({ ...p })); return "local"; }
     try {
       const base = `https://www.gstatic.com/firebasejs/${FB_VERSION}/`;
       const [app, auth, fs] = await Promise.all([import(base + "firebase-app.js"), import(base + "firebase-auth.js"), import(base + "firebase-firestore.js")]);
@@ -185,10 +185,42 @@ const GalleryStore = {
     return out;
   },
   async add(post) {
+    post = { ...post, likes: 0 };
     if (this.mode === "local") { const p = { id: "local-" + Date.now(), ...post, createdAt: new Date() }; this._local.unshift(p); return p; }
     const { collection, addDoc, serverTimestamp } = this.fb;
     const ref = await addDoc(collection(this.db, "gallery"), { ...post, createdAt: serverTimestamp() });
     return { id: ref.id, ...post, createdAt: new Date() };
+  },
+  /* ---- 좋아요: 한 사람(브라우저)이 한 수리에 한 번만. 여러 수리에는 각각 누를 수 있음 ---- */
+  _likedKey: "suri-liked",
+  likedSet() { try { return new Set(JSON.parse(localStorage.getItem(this._likedKey) || "[]")); } catch { return new Set(); } },
+  _saveLiked(s) { try { localStorage.setItem(this._likedKey, JSON.stringify([...s].slice(-500))); } catch {} },
+  isLiked(id) { return this.likedSet().has(id); },
+  /* 반환: 바뀐 뒤의 { liked, delta } */
+  async toggleLike(p) {
+    const s = this.likedSet(), was = s.has(p.id), want = !was;
+    if (this.mode === "shared") {
+      const { doc, writeBatch, increment, serverTimestamp } = this.fb;
+      const b = writeBatch(this.db), likeRef = doc(this.db, "gallery", p.id, "likes", this.uid), postRef = doc(this.db, "gallery", p.id);
+      if (want) { b.set(likeRef, { at: serverTimestamp() }); b.update(postRef, { likes: increment(1) }); }
+      else { b.delete(likeRef); b.update(postRef, { likes: increment(-1) }); }
+      try { await b.commit(); }
+      catch (e) {
+        /* 이미 누른 기록이 서버에 있는데 이 브라우저 기록만 지워진 경우 등: 서버 상태에 맞춤 */
+        if (e && e.code === "permission-denied") { if (want) s.add(p.id); else s.delete(p.id); this._saveLiked(s); return { liked: want, delta: 0 }; }
+        throw e;
+      }
+    }
+    if (want) s.add(p.id); else s.delete(p.id); this._saveLiked(s);
+    return { liked: want, delta: want ? 1 : -1 };
+  },
+  /* 인기 수리: 좋아요 많은 순 30개 */
+  async loadHot() {
+    const size = window.GALLERY_PAGE_SIZE || 30;
+    if (this.mode === "local") return this._local.slice().sort((x, y) => (y.likes || 0) - (x.likes || 0)).slice(0, size);
+    const { collection, query, orderBy, limit, getDocs } = this.fb;
+    const snap = await getDocs(query(collection(this.db, "gallery"), orderBy("likes", "desc"), limit(size)));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
   },
   async remove(id) {
     if (this.mode === "local") { this._local = this._local.filter(p => p.id !== id); return; }
@@ -551,32 +583,42 @@ function tapIntro(which) {
 }
 
 /* ---------- 갤러리 ---------- */
-let justPosted = null, galleryLoaded = false, galleryMode = "all", minePosts = null;
+let justPosted = null, galleryLoaded = false, galleryMode = "all", minePosts = null, hotPosts = null;
+const HEART_SVG = '<svg viewBox="0 0 24 22" aria-hidden="true"><path d="M12 21s-8.5-5.3-10.6-10.2C-.1 6.7 2.6 2 7 2c2.2 0 3.8 1.2 5 3 1.2-1.8 2.8-3 5-3 4.4 0 7.1 4.7 5.6 8.8C20.5 15.7 12 21 12 21z"/></svg>';
 const cleanName = s => (typeof s === "string" && s.trim()) ? s.trim().slice(0, 15) : (T.card_empty_suri || "이름 없는 수리");
 const cleanNick = s => (typeof s === "string" && s.trim()) ? s.trim().slice(0, 10) : (T.card_empty_nick || "익명");
 function renderGallery() {
   const grid = $("#grid"); grid.replaceChildren();
-  const mine = galleryMode === "mine", list = mine ? (minePosts || []) : posts;
-  $("#gAll").setAttribute("aria-selected", String(!mine)); $("#gMine").setAttribute("aria-selected", String(mine));
+  const mine = galleryMode === "mine", hot = galleryMode === "hot", list = mine ? (minePosts || []) : hot ? (hotPosts || []) : posts;
+  $("#gAll").setAttribute("aria-selected", String(galleryMode === "all")); $("#gMine").setAttribute("aria-selected", String(mine)); $("#gHot").setAttribute("aria-selected", String(hot));
   $("#gMineNote").hidden = !mine;
-  for (const p of list) {
+  const liked = GalleryStore.likedSet();
+  list.forEach((p, idx) => {
     const b = document.createElement("button");
     b.className = "tile" + (p.id === justPosted ? " new" : "");
     const name = cleanName(p.caption);
     b.setAttribute("aria-label", name + (p.authorId === GalleryStore.uid ? " (내 수리)" : "") + " 크게 보기");
     b.appendChild(suriEl(sanitize(p.recipe)));
     b.addEventListener("click", () => openCard({ recipe: sanitize(p.recipe), name, nick: cleanNick(p.nickname), post: p }));
+    const h = document.createElement("span"); h.className = "tile-like" + (liked.has(p.id) ? " on" : ""); h.dataset.id = p.id;
+    h.innerHTML = HEART_SVG + "<b>" + (p.likes || 0) + "</b>"; b.appendChild(h);
+    if (hot && idx < 3 && (p.likes || 0) > 0) { const r = document.createElement("span"); r.className = "tile-rank r" + (idx + 1); r.textContent = idx + 1; b.appendChild(r); }
     grid.appendChild(b);
-  }
+  });
   const total = Math.max(mine ? 3 : 12, Math.ceil(list.length / 3) * 3);
   for (let i = list.length; i < total; i++) { const e = document.createElement("div"); e.className = "tile empty"; e.setAttribute("aria-hidden", "true"); grid.appendChild(e); }
-  const loaded = mine ? minePosts !== null : galleryLoaded;
-  $("#gState").textContent = list.length ? "" : (loaded ? (mine ? T.gallery_mine_empty : T.gallery_empty) : T.gallery_loading);
-  $("#more").hidden = mine || !GalleryStore.hasMore;
+  const loaded = mine ? minePosts !== null : hot ? hotPosts !== null : galleryLoaded;
+  $("#gState").textContent = list.length ? "" : (loaded ? (mine ? T.gallery_mine_empty : hot ? (T.gallery_hot_empty || "아직 좋아요를 받은 수리가 없어요.") : T.gallery_empty) : T.gallery_loading);
+  $("#more").hidden = mine || hot || !GalleryStore.hasMore;
 }
 async function setGalleryMode(m) {
   if (m === "mine") track("gallery_mine");
   galleryMode = m; renderGallery();
+  if (m === "hot") {
+    track("gallery_hot");
+    try { hotPosts = await GalleryStore.loadHot(); } catch (e) { console.error(e); hotPosts = []; $("#gState").textContent = T.gallery_error; return; }
+    renderGallery(); return;
+  }
   if (m === "mine" && minePosts === null) {
     try { minePosts = await GalleryStore.loadMine(); } catch (e) { console.error(e); minePosts = []; $("#gState").textContent = T.gallery_error; return; }
     renderGallery();
@@ -798,12 +840,14 @@ async function openCard({ recipe: r, name, nick, post: p }) {
   try {
     cardCanvas = await makeCard(r, name, nick); cardName = name; cardPost = p || null; cardRecipe = r;
     $("#cardImg").src = cardCanvas.toDataURL("image/png"); $("#cardImg").alt = name + " 사원증 이미지";
+    try { await $("#cardImg").decode(); } catch {}
     $("#cardDel").hidden = !(p && (p.authorId === GalleryStore.uid || GalleryStore.isAdmin));
     /* 저장은 내 수리(또는 방금 만든 수리)만 가능 — 남의 카드는 보기만 */
     const own = !p || p.authorId === GalleryStore.uid;
     cardCanSave = own || GalleryStore.isAdmin;
     track("card_view", { from: p ? "gallery" : "popup", own });
     $("#cardSaves").hidden = !cardCanSave;
+    paintLike(p && p.id ? p : null, false);
     $("#cardImg").classList.toggle("locked", !cardCanSave);
     const cp = document.querySelector("#cardDlg .card-pop"), cs = Math.min(1, (window.innerWidth - 16) / 350, (window.innerHeight - 16) / 660);
     cp.style.transformOrigin = "0 0"; cp.style.transform = cs < 1 ? `scale(${cs})` : "";
@@ -811,6 +855,27 @@ async function openCard({ recipe: r, name, nick, post: p }) {
     $("#cardDlg").showModal();
     $("#cardDlg").style.height = (cp.offsetHeight * cs) + "px";
   } catch (e) { console.error(e); }
+}
+/* 좋아요 누르기: 같은 수리를 담은 모든 목록의 숫자를 함께 갱신 */
+let likeBusy = false;
+async function toggleLike(p) {
+  if (!p || likeBusy) return; likeBusy = true;
+  try {
+    const { liked, delta } = await GalleryStore.toggleLike(p);
+    [posts, minePosts || [], hotPosts || [], GalleryStore._local].forEach(arr => arr.forEach(x => { if (x.id === p.id && x !== p) x.likes = Math.max(0, (x.likes || 0) + delta); }));
+    p.likes = Math.max(0, (p.likes || 0) + delta);
+    track(liked ? "like" : "unlike");
+    paintLike(p, true); renderGallery();
+  } catch (e) { console.error(e); toast(T.like_error || "좋아요를 반영하지 못했어요."); }
+  finally { likeBusy = false; }
+}
+function paintLike(p, pop) {
+  const b = $("#cardLike"); if (!p) { b.hidden = true; return; }
+  const on = GalleryStore.isLiked(p.id);
+  b.hidden = false; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on));
+  b.setAttribute("aria-label", (on ? "좋아요 취소" : "좋아요") + ", 현재 " + (p.likes || 0) + "개");
+  b.innerHTML = HEART_SVG + "<b>" + (p.likes || 0) + "</b>";
+  if (pop && !reduceMotion()) b.animate([{ transform: "scale(1)" }, { transform: "scale(.82)" }, { transform: "scale(1.15)" }, { transform: "scale(1)" }], { duration: 460, easing: SPRING });
 }
 /* type: "card" = 사원증 그대로, "suri" = 수리만 (정사각형 투명 배경) */
 async function saveCard(type) {
@@ -860,10 +925,10 @@ function buildCsv(list) {
     const count = {}, nth = {};
     list.forEach(p => { count[p.authorId] = (count[p.authorId] || 0) + 1; });
     const cell = v => { let s = v == null ? "" : String(v); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
-    const rows = [["번호", "올린 시각(한국)", "수리 닉네임", "내 닉네임", "작성자 구분(같은 브라우저)", "작성자의 몇 번째 게시물", "작성자 게시물 수", "게시물 ID", "이미지 파일 이름"]];
+    const rows = [["번호", "올린 시각(한국)", "수리 닉네임", "내 닉네임", "좋아요 수", "작성자 구분(같은 브라우저)", "작성자의 몇 번째 게시물", "작성자 게시물 수", "게시물 ID", "이미지 파일 이름"]];
     list.forEach((p, i) => {
       nth[p.authorId] = (nth[p.authorId] || 0) + 1;
-      rows.push([i + 1, fmt(toDate(p.createdAt)), p.caption || "", p.nickname || "", String(p.authorId || "").slice(0, 8), nth[p.authorId], count[p.authorId], p.id, fileNameFor(p, i) + ".png"]);
+      rows.push([i + 1, fmt(toDate(p.createdAt)), p.caption || "", p.nickname || "", p.likes || 0, String(p.authorId || "").slice(0, 8), nth[p.authorId], count[p.authorId], p.id, fileNameFor(p, i) + ".png"]);
     });
     return "\uFEFF" + rows.map(r => r.map(cell).join(",")).join("\r\n");
 }
@@ -942,6 +1007,8 @@ async function start() {
   $("#adminImages").addEventListener("click", () => { if (GalleryStore.isAdmin) exportImages(); });
   $("#gAll").addEventListener("click", () => setGalleryMode("all"));
   $("#gMine").addEventListener("click", () => setGalleryMode("mine"));
+  $("#gHot").addEventListener("click", () => setGalleryMode("hot"));
+  $("#cardLike").addEventListener("click", () => { if (cardPost) toggleLike(cardPost); });
   $("#caption").addEventListener("input", updateCounts); $("#nick").addEventListener("input", updateCounts);
   $("#post").addEventListener("click", post);
   $("#issue").addEventListener("click", openIssue);

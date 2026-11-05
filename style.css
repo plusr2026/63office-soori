@@ -315,3 +315,18 @@ dialog[open] .card-pop{animation:popIn .45s cubic-bezier(.34,1.56,.64,1)}
 /* 고정 화면이 포커스 때문에 밀려 올라가지 않도록 */
 .intro{overflow:clip}
 .frame{overflow:clip}
+
+/* ===== 좋아요 ===== */
+.g-tabs{gap:8px}
+.g-tab{width:79px}
+.tile-like{position:absolute;right:4px;bottom:4px;display:flex;align-items:center;gap:2px;height:18px;padding:0 5px 0 4px;background:#fff;border:1.5px solid #222;font-size:11px;font-weight:700;line-height:1;pointer-events:none}
+.tile-like svg{width:11px;height:10px;fill:#fff;stroke:#222;stroke-width:2.4}
+.tile-like.on svg{fill:#F03E4E;stroke:#222}
+.tile-rank{position:absolute;left:-2px;top:-2px;min-width:24px;height:24px;display:flex;align-items:center;justify-content:center;background:#222;color:#FFCC00;font-weight:700;font-size:13px;pointer-events:none}
+.tile-rank.r1{background:#FFCC00;color:#222;border:2px solid #222}
+.card-like{align-self:center;margin-top:14px;height:46px;min-width:120px;padding:0 18px;display:flex;align-items:center;justify-content:center;gap:8px;background:#fff;border:3px solid #222;box-shadow:0 4px 0 #222;font-size:17px;font-weight:700;color:#222;transition:transform .38s cubic-bezier(.34,1.56,.64,1),box-shadow .12s}
+.card-like[hidden]{display:none}
+.card-like svg{width:22px;height:20px;fill:#fff;stroke:#222;stroke-width:2.2}
+.card-like.on{background:#FFE6E8}
+.card-like.on svg{fill:#F03E4E}
+.card-like:active{transform:translateY(3px) scale(.96);box-shadow:0 1px 0 #222;transition-duration:.06s}

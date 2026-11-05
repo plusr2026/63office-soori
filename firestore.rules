@@ -1,32 +1,57 @@
 rules_version = '2';
-// 63 OFFICE LIFE 갤러리 보안 규칙
+// 63 OFFICE LIFE 갤러리 보안 규칙 (좋아요 포함)
 // Firebase 콘솔 > Firestore Database > 규칙 탭에 이 내용을 통째로 붙여넣고 "게시"를 누르세요.
+// 관리자 이메일은 admin-config.js 와 똑같이 맞춰 두었습니다 (sago7878@gmail.com). 관리자를 바꾸면 두 곳 모두 고치세요.
 service cloud.firestore {
   match /databases/{database}/documents {
+    function postPath(id) { return /databases/$(database)/documents/gallery/$(id); }
+    function likePath(id, uid) { return /databases/$(database)/documents/gallery/$(id)/likes/$(uid); }
+
     match /gallery/{postId} {
       // 누구나 갤러리를 볼 수 있음
       allow read: if true;
 
-      // 올리기: 로그인(익명)한 사람만, 정해진 형식으로만, 작성자 = 본인
+      // 올리기: 로그인(익명)한 사람만, 정해진 형식으로만, 작성자 = 본인, 좋아요는 0에서 시작
       allow create: if request.auth != null
-        && request.resource.data.keys().hasOnly(['recipe', 'caption', 'nickname', 'authorId', 'createdAt', 'v'])
+        && request.resource.data.keys().hasOnly(['recipe', 'caption', 'nickname', 'authorId', 'createdAt', 'v', 'likes'])
         && request.resource.data.authorId == request.auth.uid
         && request.resource.data.caption is string && request.resource.data.caption.size() <= 15
         && request.resource.data.nickname is string && request.resource.data.nickname.size() <= 10
         && request.resource.data.recipe is map
         && request.resource.data.recipe.items is list
         && request.resource.data.recipe.items.size() <= 40
+        && request.resource.data.get('likes', 0) == 0
         && request.resource.data.createdAt == request.time;
 
-      // 삭제: 본인 게시물, 또는 관리자(아래 이메일 목록 — admin-config.js 와 똑같이 맞추기)
+      // 수정: 좋아요 숫자만, 한 번에 1씩, 그리고 "누른 기록"이 함께 생기거나 지워질 때만
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+        && (
+          (request.resource.data.likes == resource.data.get('likes', 0) + 1
+            && !exists(likePath(postId, request.auth.uid))
+            && existsAfter(likePath(postId, request.auth.uid)))
+          ||
+          (request.resource.data.likes == resource.data.get('likes', 0) - 1
+            && exists(likePath(postId, request.auth.uid))
+            && !existsAfter(likePath(postId, request.auth.uid)))
+        );
+
+      // 삭제: 본인 게시물, 또는 관리자
       allow delete: if request.auth != null && (
         resource.data.authorId == request.auth.uid
         || (request.auth.token.email_verified == true
-            && request.auth.token.email in ['관리자이메일@gmail.com'])
+            && request.auth.token.email in ['sago7878@gmail.com'])
       );
 
-      // 수정: 불가
-      allow update: if false;
+      // 누른 기록: 한 사람(익명 ID)당 한 수리에 하나. 숫자와 함께만 생기고 지워짐
+      match /likes/{uid} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow create: if request.auth != null && request.auth.uid == uid
+          && getAfter(postPath(postId)).data.likes == get(postPath(postId)).data.get('likes', 0) + 1;
+        allow delete: if request.auth != null && request.auth.uid == uid
+          && getAfter(postPath(postId)).data.likes == get(postPath(postId)).data.get('likes', 0) - 1;
+        allow update: if false;
+      }
     }
   }
 }

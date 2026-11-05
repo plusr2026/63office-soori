@@ -108,6 +108,7 @@
     <div class="g-tabs" role="tablist" aria-label="갤러리 보기 방식">
       <button class="px g-tab" id="gAll" role="tab" aria-selected="true" data-text="gallery_tab_all"></button>
       <button class="px g-tab" id="gMine" role="tab" aria-selected="false" data-text="gallery_tab_mine"></button>
+      <button class="px g-tab" id="gHot" role="tab" aria-selected="false" data-text="gallery_tab_hot">인기 수리</button>
     </div>
     <p class="g-note" id="gMineNote" hidden data-text="gallery_mine_note"></p>
     <div class="grid" id="grid"></div>
@@ -134,6 +135,7 @@
   <div class="card-pop">
     <button class="icon-btn abs" id="cardClose" style="left:31px;top:16px" aria-label="닫기"><span class="svg-slot" data-svg="design/btn-back.svg"></span></button>
     <img id="cardImg" alt="">
+    <button class="card-like" id="cardLike" hidden aria-pressed="false"></button>
     <div class="card-saves" id="cardSaves">
       <button class="px px-y pbtn" id="cardSave" data-text="card_save">사원증 저장</button>
       <button class="px px-k pbtn light" id="cardSaveSuri" data-text="card_save_suri">수리만 저장</button>
