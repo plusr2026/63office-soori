@@ -7,4 +7,5 @@
    ========================================================= */
 window.ADMIN_EMAILS = [
   "sago7878@gmail.com",
+   "nothingzero.000000@gmail.com"
 ];
